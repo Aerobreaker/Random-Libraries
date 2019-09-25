@@ -67,6 +67,57 @@ def groupwise(iterable, num=2):
 #
 
 
+def base_converter(num_expr, base):
+    """Converts input expression to the provided base.
+    
+    To convert digits to decimal values from the provided base, use the
+    following dictionary:
+        {(str(i) if i < 10 else chr(55+i)):i for i in range(36)}
+    
+    Args:
+        num_expr: The number or numeric string to be converted to another base
+        base: The base to which to convert (valid values are 2 to 36 inclusive)
+    
+    Returns:
+        A string representation of the provided numeric expression in the
+        provided base.
+    
+    Raises:
+        ValueError: The base argument is outside the bounds of 2 to 36 inclusive
+    """
+    #TODO:  See why base_converter('311/6', 4) breaks
+    from fractions import Fraction
+    if base > 36:
+        raise ValueError('cannot represent all digits in bases > 36!')
+    if base < 2:
+        raise ValueError('cannot convert to bases < 2!')
+    digits = {i:str(i) if i < 10 else chr(55+i) for i in range(36)}
+    num = Fraction(num_expr)
+    pow = Fraction(base, 1)
+    outp = []
+    while num > pow:
+        pow *= base
+    pow /= base
+    while num > 1:
+        dig = num // pow
+        num -= dig * pow
+        pow /= base
+        outp.append(digits[dig])
+    if num:
+        if not outp:
+            outp = ['0']
+        outp.append('.')
+        decim = []
+        pow = Fraction(1, base)
+        while num and len(decim) < 15:
+            dig = num // pow
+            num -= dig * pow
+            pow /= base
+            outp.append(digits[dig])
+    return ''.join(outp)
+#
+
+
 def kmp_prefix(inp, bound=None):
     """Return the KMP prefix table for a provided string."""
     #If no bound was provided, default to length of the input minus 1
