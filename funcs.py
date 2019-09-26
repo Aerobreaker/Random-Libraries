@@ -86,6 +86,7 @@ def base_converter(num_expr, base, num_decimals=12):
     Raises:
         ValueError: The base argument is outside the bounds of 2 to 36 inclusive
     """
+    from collections import deque
     from fractions import Fraction
     if base > 36:
         raise ValueError('cannot represent all digits in bases > 36!')
@@ -96,10 +97,10 @@ def base_converter(num_expr, base, num_decimals=12):
     num = Fraction(num_expr)
     pow = Fraction(base, 1)
     outp = []
-    while num > pow:
+    while num >= pow:
         pow *= base
     pow /= base
-    while num > 1:
+    while pow >= 1:
         dig = num // pow
         num -= dig * pow
         pow /= base
@@ -108,22 +109,26 @@ def base_converter(num_expr, base, num_decimals=12):
         if not outp:
             outp = ['0']
         outp.append('.')
-        decim = []
-        pow = Fraction(1, base)
-        seen = {(num.numerator, num.denominator)}
+        decim = deque()
+        seen = {(num.numerator, num.denominator):0}
         while num and len(decim) < num_decimals:
             dig = num // pow
             decim.append(digits[dig])
             num -= dig * pow
             ratio = (num.numerator, num.denominator/pow.denominator)
             if ratio in seen:
+                for i in range(seen[ratio]):
+                    outp.append(decim.popleft())
+                decim.appendleft('(')
+                decim.append(')')
                 decim.append('...')
                 break
             pow /= base
-            seen.add(ratio)
+            seen[ratio] = len(decim)
         if num and decim[-1] != '...':
             if (num // pow) > 4:
                 decim[-1] = digits[numbers[decim[-1]]+1]
+            decim.append('...')
         outp.extend(decim)
     return ''.join(outp)
 #
