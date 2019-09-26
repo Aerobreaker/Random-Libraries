@@ -86,6 +86,8 @@ def base_converter(num_expr, base, num_decimals=12):
     Raises:
         ValueError: The base argument is outside the bounds of 2 to 36 inclusive
     """
+    #TOTO: Figure out why base_converter('12/99', 10) returns '0.1(21)...'
+    #instead of '0.(12)...' as expected
     from collections import deque
     from fractions import Fraction
     if base > 36:
