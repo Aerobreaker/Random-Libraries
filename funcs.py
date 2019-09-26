@@ -92,29 +92,49 @@ def base_converter(num_expr, base, num_decimals=12):
         raise ValueError('cannot represent all digits in bases > 36!')
     if base < 2:
         raise ValueError('cannot convert to bases < 2!')
+    #Build dictionaries for easy lookup.
     digits = {i:str(i) if i < 10 else chr(55+i) for i in range(36)}
     numbers = {(str(i) if i < 10 else chr(55+i)):i for i in range(36)}
+    #Use fractions to avoid floating point errors.
     num = Fraction(num_expr)
     pow = Fraction(base, 1)
     outp = []
+    #First, find the size of the largest digit by looking for the lowest power
+    #of base which is greater than the input.
     while num >= pow:
         pow *= base
+    #Drop down by one to get the largest digit
     pow /= base
+    #While we're non-fractional, it's pretty easy.  Move down by on digit each
+    #loop, decrementing the input and appending the appropriate digit to the
+    #output.
     while pow >= 1:
         dig = num // pow
         num -= dig * pow
         pow /= base
         outp.append(digits[dig])
+    #For fractions, it's a little more complicated.
     if num:
         if not outp:
             outp = ['0']
         outp.append('.')
+        #Separate integer from fractional parts so we can more easily determine
+        #how many decimals we have; don't want to be running forever.
         decim = deque()
+        #Create a dictionary of ratios seen.  If we see a ratio in relation to
+        #the base that we've seen before, we're going to start repeating digits.
+        #For example, 1/3 in base 4 is 1/3 of 1.  When you subtract 1/4, you get
+        #1/12...which is 1/3 of 1/4.  By checking the ratios, we know that the
+        #sequence of digits since the last time this ratio was seen (in this
+        #case, '1') will repeat infinitely (because if we keep going, we'll
+        #eventually get to the same ratio again).
         seen = {(num.numerator, num.denominator):0}
         while num and len(decim) < num_decimals:
             dig = num // pow
             decim.append(digits[dig])
             num -= dig * pow
+            #Other than this ratio part, it's exactly the same as the integer
+            #part.
             ratio = (num.numerator, num.denominator/pow.denominator)
             if ratio in seen:
                 for i in range(seen[ratio]):
@@ -125,10 +145,13 @@ def base_converter(num_expr, base, num_decimals=12):
                 break
             pow /= base
             seen[ratio] = len(decim)
-        if num and decim[-1] != '...':
-            if (num // pow) > 4:
+        else:
+            #If we didn't break due to repeating digits, round up and indicate
+            #that rounding occurred, if appropriate.
+            if num // pow > 4:
                 decim[-1] = digits[numbers[decim[-1]]+1]
-            decim.append('...')
+            if num:
+                decim.append('...')
         outp.extend(decim)
     return ''.join(outp)
 #
