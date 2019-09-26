@@ -67,7 +67,7 @@ def groupwise(iterable, num=2):
 #
 
 
-def base_converter(num_expr, base):
+def base_converter(num_expr, base, num_decimals=12):
     """Converts input expression to the provided base.
     
     To convert digits to decimal values from the provided base, use the
@@ -77,6 +77,7 @@ def base_converter(num_expr, base):
     Args:
         num_expr: The number or numeric string to be converted to another base
         base: The base to which to convert (valid values are 2 to 36 inclusive)
+        num_decimals: The maximum number of digits after the decimal place
     
     Returns:
         A string representation of the provided numeric expression in the
@@ -85,13 +86,13 @@ def base_converter(num_expr, base):
     Raises:
         ValueError: The base argument is outside the bounds of 2 to 36 inclusive
     """
-    #TODO:  See why base_converter('311/6', 4) breaks
     from fractions import Fraction
     if base > 36:
         raise ValueError('cannot represent all digits in bases > 36!')
     if base < 2:
         raise ValueError('cannot convert to bases < 2!')
     digits = {i:str(i) if i < 10 else chr(55+i) for i in range(36)}
+    numbers = {(str(i) if i < 10 else chr(55+i)):i for i in range(36)}
     num = Fraction(num_expr)
     pow = Fraction(base, 1)
     outp = []
@@ -109,11 +110,21 @@ def base_converter(num_expr, base):
         outp.append('.')
         decim = []
         pow = Fraction(1, base)
-        while num and len(decim) < 15:
+        seen = {(num.numerator, num.denominator)}
+        while num and len(decim) < num_decimals:
             dig = num // pow
+            decim.append(digits[dig])
             num -= dig * pow
+            ratio = (num.numerator, num.denominator/pow.denominator)
+            if ratio in seen:
+                decim.append('...')
+                break
             pow /= base
-            outp.append(digits[dig])
+            seen.add(ratio)
+        if num and decim[-1] != '...':
+            if (num // pow) > 4:
+                decim[-1] = digits[numbers[decim[-1]]+1]
+        outp.extend(decim)
     return ''.join(outp)
 #
 
