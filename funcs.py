@@ -86,8 +86,6 @@ def base_converter(num_expr, base, num_decimals=12):
     Raises:
         ValueError: The base argument is outside the bounds of 2 to 36 inclusive
     """
-    #TOTO: Figure out why base_converter('12/99', 10) returns '0.1(21)...'
-    #instead of '0.(12)...' as expected
     from collections import deque
     from fractions import Fraction
     if base > 36:
@@ -117,11 +115,12 @@ def base_converter(num_expr, base, num_decimals=12):
         outp.append(digits[dig])
     #For fractions, it's a little more complicated.
     if num:
-        if not outp:
-            outp = ['0']
         outp.append('.')
         #Separate integer from fractional parts so we can more easily determine
-        #how many decimals we have; don't want to be running forever.
+        #how many decimals we have; don't want to be running forever.  Although
+        #with the addition of repeated digit tracking, this is more for space
+        #considerations than to prevent running forever...that said, it does
+        #keep in check things like pi or e.
         decim = deque()
         #Create a dictionary of ratios seen.  If we see a ratio in relation to
         #the base that we've seen before, we're going to start repeating digits.
@@ -130,14 +129,15 @@ def base_converter(num_expr, base, num_decimals=12):
         #sequence of digits since the last time this ratio was seen (in this
         #case, '1') will repeat infinitely (because if we keep going, we'll
         #eventually get to the same ratio again).
-        seen = {(num.numerator, num.denominator):0}
+        seen = {num:0}
         while num and len(decim) < num_decimals:
             dig = num // pow
             decim.append(digits[dig])
             num -= dig * pow
             #Other than this ratio part, it's exactly the same as the integer
-            #part.
-            ratio = (num.numerator, num.denominator/pow.denominator)
+            #section.
+            ratio = Fraction(num.numerator,
+                             Fraction(num.denominator, pow.denominator))
             if ratio in seen:
                 for i in range(seen[ratio]):
                     outp.append(decim.popleft())
