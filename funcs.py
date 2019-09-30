@@ -94,7 +94,7 @@ def base_converter(num_expr, base, num_decimals=12):
         raise ValueError('cannot convert to bases < 2!')
     #Build dictionaries for easy lookup.
     digits = {i:str(i) if i < 10 else chr(55+i) for i in range(36)}
-    numbers = {str(i) if i < 10 else chr(55+i):i for i in range(36)}
+    numbers = {v:k for k, v in digits.items()}
     #Use fractions to avoid floating point errors.
     num = Fraction(num_expr)
     pow = Fraction(base, 1)
