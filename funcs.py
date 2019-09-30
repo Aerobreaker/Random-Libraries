@@ -72,7 +72,7 @@ def base_converter(num_expr, base, num_decimals=12):
     
     To convert digits to decimal values from the provided base, use the
     following dictionary:
-        {(str(i) if i < 10 else chr(55+i)):i for i in range(36)}
+        {str(i) if i < 10 else chr(55+i):i for i in range(36)}
     
     Args:
         num_expr: The number or numeric string to be converted to another base
@@ -94,7 +94,7 @@ def base_converter(num_expr, base, num_decimals=12):
         raise ValueError('cannot convert to bases < 2!')
     #Build dictionaries for easy lookup.
     digits = {i:str(i) if i < 10 else chr(55+i) for i in range(36)}
-    numbers = {(str(i) if i < 10 else chr(55+i)):i for i in range(36)}
+    numbers = {str(i) if i < 10 else chr(55+i):i for i in range(36)}
     #Use fractions to avoid floating point errors.
     num = Fraction(num_expr)
     pow = Fraction(base, 1)
