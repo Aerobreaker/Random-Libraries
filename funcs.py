@@ -103,13 +103,13 @@ def base_converter(num_expr, base, num_decimals=12):
     #addition of repeated digit tracking, this is more for space conditions than
     #for runtime, but it will keep in check things like pi or e.
     decimals = -1
-    #Create a dictionary of ratios seen.  If we see a ratio in relation to
-    #the base that we've seen before, we're going to start repeating digits.
-    #For example, 1/3 in base 4 is 1/3 of 1.  When you subtract 1/4, you get
-    #1/12...which is 1/3 of 1/4.  By checking the ratios, we know that the
-    #sequence of digits since the last time this ratio was seen (in this
-    #case, '1') will repeat infinitely (because if we keep going, we'll
-    #eventually get to the same ratio again).
+    #Create a dictionary of ratios seen.  If we see a ratio in relation to the
+    #base that we've seen before, we're going to start repeating digits.  For
+    #example, 1/3 in base 4 is 1/3 of 1.  When you subtract 1/4, you get 1/12...
+    #which is 1/3 of 1/4.  By checking the ratios, we know that the sequence of
+    #digits since the last time this ratio was seen (in this case, '1') will
+    #repeat infinitely (because if we keep going, we'll eventually get to the
+    #same ratio again).
     seen = {}
     #First, find the size of the largest digit by looking for the lowest power
     #of base which is greater than the input.
@@ -125,22 +125,19 @@ def base_converter(num_expr, base, num_decimals=12):
         num -= dig * pow
         ratio = Fraction(num.numerator,
                          Fraction(num.denominator, pow.denominator))
+        outp.append(digits[dig])
         #If a repeating digit is found, strip all the digits since the last time
         #this ratio was seen and put them in parens.
         if ratio in seen:
-            outp.append(digits[dig])
             outp[seen[ratio]:] = ['({})...'.format(''.join(outp[seen[ratio]:]))]
             break
         #If power > 1, nothing special happens.  But if there's a fractional
-        #part, insert the '.' and start building the seen dictionary.  While
-        #computing the fractional part, track number of decimal places and
-        #update the dictionary of seen ratios.
-        if pow > 1:
-            outp.append(digits[dig])
-        else:
-            outp.append(digits[dig])
-            if num and pow == 1:
-                outp.append('.')
+        #part and power <= 1, insert the '.' and start building the seen
+        #dictionary.  While computing the fractional part, track number of 
+        #decimal places and update the dictionary of seen ratios.
+        if num and pow == 1:
+            outp.append('.')
+        elif pow <= 1:
             seen[ratio] = len(outp)
             decimals += 1
         pow /= base
