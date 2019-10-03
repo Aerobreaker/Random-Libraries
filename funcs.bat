@@ -6,6 +6,7 @@ timeout /t 30
 goto :eof
 
 :demo
+echo/
 if "%*" equ "" (
 	echo/No date specified^!  Defaulting to the day before yesterday.
 	echo/
@@ -17,7 +18,6 @@ if "%*" equ "" (
 		)
 	)
 )
-echo/
 call :gettime _tim
 set _sec=%_tim:~0,-3%.%_tim:~-3%
 echo/Current time (milliseconds): %_tim%
@@ -72,27 +72,27 @@ call :datediff _dif %_curday% %_curmonth% %_curyear% %_pastday% %_pastmonth% %_p
 call :monthtrans _monthstr %_pastmonth%
 echo/Date provided: %_pastday% %_monthstr%, %_pastyear%
 echo/Julian date  : %_dj%
+echo/
 echo/This date is %_dif% days in the past
 echo/
 goto :eof
 
 :gettime <return_var>
-::Get the current time in milliseconds
+::Get the current time in milliseconds using powershell
 ::Requires the remzeros subroutine
 setlocal enabledelayedexpansion
 for /f "tokens=1-4 delims=-" %%a in ('powershell -command "get-date" -format "h-m-s-fff"') do (
-	set _hh=%%a
-	set _mm=%%b
-	set _ss=%%c
-	set _ssss=%%d
+	call :remzeros _hh %%a
+	call :remzeros _mm %%b
+	call :remzeros _ss %%c
+	call :remzeros _ssss %%d
 )
-call :remzeros _ssss
-endlocal & set /a "%~1=%_hh%*3600000+%-mm%*60000+%-ss%*1000+%_ssss%"
+endlocal & set /a "%~1=%_hh%*3600000+%_mm%*60000+%_ss%*1000+%_ssss%"
 exit /b 0
 
 :remzeros <return_var> [<value>]
 ::Remove leading 0s
-::Removes all spaces as well - intended use is for numbers only
+::Removes all spaces as well(not just leading); intended use is for numbers only
 ::Read the value from the provided variable if no value is given
 setlocal enabledelayedexpansion
 if "%~2" equ "" (
@@ -161,11 +161,15 @@ exit /b 0
 ::Read the string from the provided variable if no string is given
 setlocal enabledelayedexpansion
 if "%~2" equ "" (
-	set _ret=0
+	set "_str=!%~1!"
 ) else (
-	set _ret=1
+	set "_str=%~2"
 )
-set "_str=%~2"
+if "%_str%" equ "" (
+	endlocal & set "%~1=0"
+	exit /b 0
+)
+set "_ret=1"
 for %%a in (4096 2048 1024 512 256 128 64 32 16 8 4 2 1) do (
 	if "!_str:~%%a,1!" neq "" (
 		set /a _ret+=%%a
@@ -196,9 +200,7 @@ endlocal & set "%~1=%_str%"
 exit /b 0
 
 :getcurdate <return_var> or <day_var> <month_var> <year var>
-::Get today's date
-::This requires modifications to the registry in order to force the date format required
-::Registry changes are reverted once no longer needed
+::Get today's date using powershell
 setlocal enabledelayedexpansion
 for /f "tokens=1-3 delims=/" %%a in ('powershell -command "get-date" -format "dd/MM/yyyy"') do (
 	set _dd=%%a
@@ -217,17 +219,21 @@ exit /b 0
 :dj <return_var> <day> <month> <year>
 ::Calculate a julian date given a day, month, and year
 ::Default to the current date if no date is given
-::Requires the remzeros subroutine
+::Requires the remzeros and getcurdate subroutines
 setlocal enabledelayedexpansion
 set _date="%*"
 set _date=%_date:"=%
 set _var="%1"
 set _var=%_var:"=%
 set "_date=!_date:%_var% =!"
-for /f "tokens=1-3 delims=/ " %%a in ('echo/%_date%') do (
-	call :remzeros _day %%a
-	call :remzeros _month %%b
-	call :remzeros _year %%c
+if "%_date%" equ "" (
+	call :getcurdate _day _month _year
+) else (
+	for /f "tokens=1-3 delims=/ " %%a in ('echo/%_date%') do (
+		call :remzeros _day %%a
+		call :remzeros _month %%b
+		call :remzeros _year %%c
+	)
 )
 if %_month% lss 3 set /a _month+=12,_year-=1
 set /a _a=_year/100
@@ -283,6 +289,7 @@ exit /b 0
 
 :monthtrans <return_var> <month>
 ::Translate a numeric month into the name of the month
+::Requires the remzeros subroutine
 setlocal enabledelayedexpansion
 call :remzeros _month %~2
 if %_month% equ 1 set "_name=January"
