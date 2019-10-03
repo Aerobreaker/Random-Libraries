@@ -463,7 +463,7 @@ Function Select-Option {
 			2. The message (the question to be asked of the user)
 			3. An array of options.  Defaults to Yes / No
 			4. The option to default to (0-indexed).  Defaults to option 0
-		Optionally, the prompt can be timed.  In timed mode, two additional parameters are available:
+		Optionally, the prompt can be timed.  In timed mode, three additional parameters are available:
 			5. The timeout for the prompt
 			6. The minimum time to wait after the user has pressed a key
 			7. The interval after which to check for keys
@@ -537,16 +537,14 @@ Function Select-Option {
 			)
 
 			#Write the first element in the array in white (before the default)
-			Write-Host -NoNewLine $Pstr[0]
+			If ([bool]$Pstr[0]) {
+				Write-Host -NoNewLine $Pstr[0]
+			}
 			#Write the second element in the array (the default) in yellow
 			Write-Host -NoNewLine -ForegroundColor Yellow $Pstr[1]
 			#Then write the last element in the array in white (after the default)
 			#If the NoNewLine parameter was provided, don't write a newline afterwards
-			If ($NoNewLine) {
-				Write-Host -NoNewLine $Pstr[2]
-			} Else {
-				Write-Host $Pstr[2]
-			}
+			Write-Host -NoNewLine:$NoNewLine $Pstr[2]
 		}
 
 		If ($DefaultOption -ge $OptionList.Length) {
@@ -566,7 +564,8 @@ Function Select-Option {
 		#Create a new arraylist for an array-like object which can easily be appended to
 		$Disp = New-Object System.Collections.ArrayList
 		#Create a 3-element array to hold the prompt string
-		$Pstr = @("","","")
+		#Use arraylists for performance when appending elements
+		$Pstr = @($(New-Object System.Collections.ArrayList),$(New-Object System.Collections.ArrayList),$(New-Object System.Collections.ArrayList))
 		#Start indexing at 0
 		$Index = 0
 		#Iterate through the provided option list
@@ -577,7 +576,7 @@ Function Select-Option {
 			$Short = ""
 			#If the label contains an ampersand
 			If ($Item.Label.Contains("&")) {
-				#The short label is te caracter after the ampersand
+				#The short label is the caracter after the ampersand
 				$Short = [String]$Item.Label[$Item.Label.IndexOf("&") + 1]
 				#Map the short label to the index number
 				$Map[$Short] = $Index
@@ -589,20 +588,9 @@ Function Select-Option {
 				$Nil = $Disp.Add(@($Long, $Item.HelpMessage))
 			}
 			#If the index is less than the default, add the option to the pre-default element in the prompt string array
-			#If ($Index -lt $DefaultOption) {
-				#$Pstr[0] += "[$Short] $Long  "
 			#If the index is greater than the default, add the option to the post-default element
-			#} ElseIf ($Index -gt $DefaultOption) {
-				#$Pstr[2] += "[$Short] $Long  "
 			#And if the index is equal to the default, add the option to the default element
-			#} Else {
-				#$Pstr[1] += "[$Short] $Long  "
-			#}
-			If ($Index -eq $DefaultOption) {
-				Write-Host -NoNewLine -ForegroundColor Yellow "[$Short] $Long "
-			} Else {
-				Write-Host -NoNewLine "[$Short] $Long "
-			}
+			$Nil = $Pstr[(($Index -ge $DefaultOption) + ($Index -gt $DefaultOption))].add("[$Short] $Long")
 			#Map the long label to the index number and increment the index number
 			$Map[$Long] = $Index++
 		}
@@ -620,12 +608,12 @@ Function Select-Option {
 			Return Select-Option $PromptTitle $PromptQuestion $OptionList $DefaultOption
 		}
 		#Append the help message to the post-default element in the prompt string array
-		#$Pstr[2] += "[?] Help (default is ""$DefOp""): "
-		Write-Host -NoNewLine "[?] Help (default is ""$DefOp""): "
+		$Nil = $Pstr[2].Add(" [?] Help (default is ""$DefOp""): ")
+		$Nil = $Pstr[1].Add(" ")
 		
 		#And write the prompt string array (the options) with the default in yellow
 		#Don't include a trailing newline
-		#Write-Prompt -NoNewLine $Pstr
+		Write-Prompt -NoNewLine $Pstr
 		
 		#Start a pair of timers
 		$Timer = [Diagnostics.StopWatch]::StartNew()
@@ -670,7 +658,7 @@ Function Select-Option {
 					} ElseIf ($Map.ContainsKey($Inp)) {
 						#Return the index of the input
 						Return $Map[$Inp]
-					#If the intpu is null
+					#If the input is null
 					} ElseIf ('' -eq $Inp) {
 						#Return the default index
 						Return $DefaultOption
