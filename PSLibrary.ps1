@@ -1423,7 +1423,7 @@ Function Restart-Process {
 		[Parameter(Mandatory=$True, Position=2, ParameterSetName="ExtWriteName")]
 		[Parameter(Mandatory=$True, Position=2, ParameterSetName="ExtWriteProc")]
 		[Alias("Display", "WN")]
-		[String]$WriteName
+		[String]$WriteName,
 		
 		
 		[Parameter(ParameterSetName="FlagsName")]
@@ -1490,6 +1490,7 @@ Function Restart-Process {
 		}
 		$Process.Kill()
 		$ForceClose = $False
+	}
 	If (!$ForceClose -and !$(Wait-ProcessClose $Process -WriteOut:$WriteOut -WriteName $WriteName)) {
 		If ($WriteOut) {
 			Write-Host "Unable to stop $WriteName process!"
