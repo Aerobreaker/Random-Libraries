@@ -1504,7 +1504,11 @@ Function Restart-Process {
 		Write-Host "Starting $WriteName process..."
 	}
 	
-	Start-Process $Path -ArgumentList $StartArgs
+	If ($StartArgs) {
+		Start-Process $Path -ArgumentList $StartArgs
+	} Else {
+		Start-Process $Path
+	}
 	
 	If ($WriteOut) {
 		Write-Host "$WriteName process started."
