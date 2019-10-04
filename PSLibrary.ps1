@@ -1401,7 +1401,7 @@ Function Restart-Process {
 		[Parameter(Mandatory=$True, Position=0, ParameterSetName="ExtName")]
 		[Parameter(Mandatory=$True, Position=0, ParameterSetName="ExtWriteName")]
 		[Alias("Proc")]
-		[String]$Process,
+		[Diagnostics.Process]$Process,
 		
 		[Parameter(Position=1)]
 		[Alias("Args")]
