@@ -1492,9 +1492,9 @@ Function Restart-Process {
 		$ForceClose = $False
 	If (!$ForceClose -and !$(Wait-ProcessClose $Process -WriteOut:$WriteOut -WriteName $WriteName)) {
 		If ($WriteOut) {
-			Write-Host "Unable to stop $WriteName process.  Exiting."
+			Write-Host "Unable to stop $WriteName process!"
 		}
-		Return
+		Return $False
 	}
 	
 	If ($WriteOut -and $StartArgs) {
@@ -1504,4 +1504,9 @@ Function Restart-Process {
 	}
 	
 	Start-Process $Path -ArgumentList $StartArgs
+	
+	If ($WriteOut) {
+		Write-Host "$WriteName process started."
+	}
+	Return $True
 }
