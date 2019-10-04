@@ -1061,7 +1061,7 @@ Function Wait-ProcessIdle {
 	)
 	
 	#If we're in one of the "Name" parameter sets
-	If ($PSCmdlet.ParameterSetName -like "*Name*") {
+	If ($PSCmdlet.ParameterSetName -like "*Name") {
 		#Use Get-Process to find the running executable
 		$Process = Get-Process -ErrorAction SilentlyContinue -Name $ProcessName
 		#If there's no process and we're waiting for the process to start
@@ -1221,7 +1221,7 @@ Function Wait-ProcessMainWindow {
 	)
 	
 	#If we're in one of the "Name" parameter sets
-	If ($PSCmdlet.ParameterSetName -like "*Name*") {
+	If ($PSCmdlet.ParameterSetName -like "*Name") {
 		#Use Get-Process to find the running executable
 		$Process = Get-Process -ErrorAction SilentlyContinue -Name $ProcessName
 		#If there's no process and we're waiting for the process to start
@@ -1335,13 +1335,13 @@ Function Wait-ProcessClose {
 	)
 	
 	#If we're in one of the "Name" parameter sets
-	If ($PSCmdlet.ParameterSetName -like "*Name*") {
+	If ($PSCmdlet.ParameterSetName -like "*Name") {
 		#Use Get-Process to find the running executable
 		$Process = Get-Process -ErrorAction SilentlyContinue -Name $ProcessName
 	#Otherwise, if we're in one of the "Proc" sets
 	}
 	
-	#If the user did not specify a process or if it exited, throw an error
+	#If the user did not specify a process or if it exited, return true
 	If (!$Process -or $Process.HasExited) {
 		If ($WriteOut) {
 			Write-Host "$WriteName process has exited."
@@ -1380,4 +1380,128 @@ Function Wait-ProcessClose {
 	}
 	#Return true
 	Return $True
+}
+
+Function Restart-Process {
+	[CmdletBinding(DefaultParameterSetName="Name")]
+	Param(
+		[Parameter(Mandatory=$True, Position=0, ParameterSetName="Name")]
+		[Parameter(Mandatory=$True, Position=0, ParameterSetName="WriteName")]
+		[Parameter(Mandatory=$True, Position=0, ParameterSetName="FlagsName")]
+		[Parameter(Mandatory=$True, Position=0, ParameterSetName="FlagsWriteName")]
+		[Parameter(Mandatory=$True, Position=0, ParameterSetName="ExtName")]
+		[Parameter(Mandatory=$True, Position=0, ParameterSetName="ExtWriteName")]
+		[Alias("Name", "PN")]
+		[String]$ProcessName,
+		
+		[Parameter(Mandatory=$True, Position=0, ParameterSetName="Proc")]
+		[Parameter(Mandatory=$True, Position=0, ParameterSetName="WriteProc")]
+		[Parameter(Mandatory=$True, Position=0, ParameterSetName="FlagsProc")]
+		[Parameter(Mandatory=$True, Position=0, ParameterSetName="FlagsWriteProc")]
+		[Parameter(Mandatory=$True, Position=0, ParameterSetName="ExtName")]
+		[Parameter(Mandatory=$True, Position=0, ParameterSetName="ExtWriteName")]
+		[Alias("Proc")]
+		[String]$Process,
+		
+		[Parameter(Position=1)]
+		[Alias("Args")]
+		[String]$StartArgs="",
+		
+		[Parameter(ParameterSetName="WriteName")]
+		[Parameter(ParameterSetName="WriteProc")]
+		[Parameter(ParameterSetName="FlagsWriteName")]
+		[Parameter(ParameterSetName="FlagsWriteProc")]
+		[Parameter(ParameterSetName="ExtWriteName")]
+		[Parameter(ParameterSetName="ExtWriteProc")]
+		[Alias("Write")]
+		[Switch]$WriteOut,
+		
+		[Parameter(Mandatory=$True, Position=2, ParameterSetName="WriteName")]
+		[Parameter(Mandatory=$True, Position=2, ParameterSetName="WriteProc")]
+		[Parameter(Mandatory=$True, Position=2, ParameterSetName="FlagsWriteName")]
+		[Parameter(Mandatory=$True, Position=2, ParameterSetName="FlagsWriteProc")]
+		[Parameter(Mandatory=$True, Position=2, ParameterSetName="ExtWriteName")]
+		[Parameter(Mandatory=$True, Position=2, ParameterSetName="ExtWriteProc")]
+		[Alias("Display", "WN")]
+		[String]$WriteName
+		
+		
+		[Parameter(ParameterSetName="FlagsName")]
+		[Parameter(ParameterSetName="FlagsWriteName")]
+		[Parameter(ParameterSetName="FlagsProc")]
+		[Parameter(ParameterSetName="FlagsWriteProc")]
+		[Switch]$UseFlags,
+		
+		[Parameter(Mandatory=$True, Position=3, ParameterSetName="FlagsName")]
+		[Parameter(Mandatory=$True, Position=3, ParameterSetName="FlagsWriteName")]
+		[Parameter(Mandatory=$True, Position=3, ParameterSetName="FlagsProc")]
+		[Parameter(Mandatory=$True, Position=3, ParameterSetName="FlagsWriteProc")]
+		[String]$Flags,
+		
+		[Parameter(ParameterSetName="ExtName")]
+		[Parameter(ParameterSetName="ExtWriteName")]
+		[Parameter(ParameterSetName="ExtProc")]
+		[Parameter(ParameterSetName="ExtWriteProc")]
+		[Switch]$UseExternal,
+		
+		[Parameter(Mandatory=$True, Position=3, ParameterSetName="ExtName")]
+		[Parameter(Mandatory=$True, Position=3, ParameterSetName="ExtWriteName")]
+		[Parameter(Mandatory=$True, Position=3, ParameterSetName="ExtProc")]
+		[Parameter(Mandatory=$True, Position=3, ParameterSetName="ExtWriteProc")]
+		[String]$External,
+		
+		[Alias("Force", "Kill")]
+		[Switch]$ForceClose
+	)
+	
+	If ($PSCmdlet.ParameterSetName -like "*Name") {
+		If ($WriteOut) {
+			Write-Host "Acquiring handle for $WriteName process..."
+		}
+		$Process = Get-Process -ErrorAction SilentlyContinue -Name $ProcessName
+	}
+	
+	If (!$Process -or $Process.HasExited) {
+		Throw "Invalid process specified!"
+	}
+	
+	$Path = $Process.Path
+	
+	If ($UseExternal) {
+		If ($WriteOut) {
+			Write-Host "Stopping $WriteName process using external command: ""$External""..."
+		}
+		cmd /c "$External"
+	} ElseIf ($UseFlags) {
+		If ($WriteOut) {
+			Write-Host "Stopping $WriteName process using flags: ""$Flags""..."
+		}
+		Start-Process $Path -ArgumentList $Flags
+	} Else {
+		If ($WriteOut) {
+			Write-Host "Stopping $WriteName process by closing main window..."
+		}
+		$Process.CloseMainWindow()
+	}
+	
+	If ($ForceClose -and !$(Wait-ProcessClose $Process -WriteOut:$WriteOut -WriteName $WriteName)) {
+		If ($WriteOut) {
+			Write-Host "$WriteName process is not stopping.  Force closing..."
+		}
+		$Process.Kill()
+		$ForceClose = $False
+	If (!$ForceClose -and !$(Wait-ProcessClose $Process -WriteOut:$WriteOut -WriteName $WriteName)) {
+		If ($WriteOut) {
+			Write-Host "Unable to stop $WriteName process.  Exiting."
+		}
+		Return
+	}
+	
+	If ($WriteOut -and $StartArgs) {
+		Write-Host "Starting $WriteName process with arguments ""$StartArgs""..."
+	} ElseIf ($WriteOut) {
+		Write-Host "Starting $WriteName process..."
+	}
+	
+	Start-Process $Path -ArgumentList $StartArgs
 }
