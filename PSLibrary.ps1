@@ -607,9 +607,14 @@ Function Select-Option {
 			#Re-run in un-timed mode to throw the correct error
 			Return Select-Option $PromptTitle $PromptQuestion $OptionList $DefaultOption
 		}
-		#Append the help message to the post-default element in the prompt string array
-		$Nil = $Pstr[2].Add(" [?] Help (default is ""$DefOp""): ")
+		#If first element isn't default, append a space
+		If ($Pstr[0]) {
+			$Nil = $Pstr[0].Add(" ")
+		}
+		#Default option is always present
 		$Nil = $Pstr[1].Add(" ")
+		#Append the help message to the post-default element in the prompt string array
+		$Nil = $Pstr[2].Add("[?] Help (default is ""$DefOp""): ")
 		
 		#And write the prompt string array (the options) with the default in yellow
 		#Don't include a trailing newline
@@ -1311,7 +1316,7 @@ Function Wait-ProcessClose {
 		[Alias("Proc")]
 		[Diagnostics.Process]$Process,
 		
-		#Take a timespan indicating how frequently to check CPU time as the third parameter
+		#Take a timespan indicating how frequently to check the process
 		[Parameter(Position=1)]
 		[Alias("CheckInt","Check")]
 		[Timespan]$CheckInterval = [Timespan]::FromMilliseconds(100),
@@ -1451,7 +1456,15 @@ Function Restart-Process {
 		[String]$External,
 		
 		[Alias("Force", "Kill")]
-		[Switch]$ForceClose
+		[Switch]$ForceClose,
+		
+		[Parameter(Position=4)]
+		[Alias("CheckInt","Check")]
+		[Timespan]$CheckInterval = [Timespan]::FromMilliseconds(100),
+		
+		[Parameter(Position=5)]
+		[Alias("Time")]
+		[Timespan]$Timeout = [Timespan]::FromSeconds(30)
 	)
 	
 	If ($PSCmdlet.ParameterSetName -like "*Name") {
@@ -1484,14 +1497,14 @@ Function Restart-Process {
 		$Process.CloseMainWindow()
 	}
 	
-	If ($ForceClose -and !$(Wait-ProcessClose $Process -WriteOut:$WriteOut -WriteName $WriteName)) {
+	If ($ForceClose -and !$(Wait-ProcessClose $Process -WriteOut:$WriteOut -WriteName $WriteName -CheckInterval $CheckInterval -Timeout $Timeout)) {
 		If ($WriteOut) {
 			Write-Host "$WriteName process is not stopping.  Force closing..."
 		}
 		$Process.Kill()
 		$ForceClose = $False
 	}
-	If (!$ForceClose -and !$(Wait-ProcessClose $Process -WriteOut:$WriteOut -WriteName $WriteName)) {
+	If (!$ForceClose -and !$(Wait-ProcessClose $Process -WriteOut:$WriteOut -WriteName $WriteName -CheckInterval $CheckInterval -Timeout $Timeout)) {
 		If ($WriteOut) {
 			Write-Host "Unable to stop $WriteName process!"
 		}
