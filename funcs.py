@@ -517,20 +517,30 @@ def sub_bit(num, bit=None):
     """docstring"""
     if bit is None:
         bit = get_lsb(num)
-    #
-    #Can return num - bit, but bitwise operations tend to be faster
+    #NOTE:  This process may only work with subtracting a single bit.  Numbers
+    #which are not powers of two may not be subtractable using this method.
     return num ^ bit
 #
 def add_bit(num, bit=None):
     """docstring"""
     if bit is None:
         bit = get_lsb(num)
-    #
-    #If there's no ALU, you need to do some fancy stuff - invert LSB, or with
-    #original number, get LS0B, invert LS0B, XOR LS0B with inverted LS0B with
-    #original number.  With an ALU, this is 6 or so cycles slower, but without
-    #it's at least constant time
-    return num + bit
+    #NOTE:  This process may only work with adding a single bit.  Numbers which
+    #aren't powers of two may not be addable using this method
+    if bit & num:
+        #This flips on all bits right of bit and turns off bit
+        bitones = ~bit ^ -bit ^ bit
+        #This lets us get the least significant 0 bit greater than bit
+        ls0bmask = num | bitones
+        ls0bit = get_lsb(~ls0bmask)
+        #Invert right-hand 0 bits again, but don't turn off the original bit
+        ls0b_ones = ~ls0bit ^ -ls0bit
+        #Turn off bits right of the added bit (they aren't affected)
+        mask = ls0b_ones ^ bitones
+        #Apply mask to original number
+        return num ^ mask
+    else:
+        return num | bit
 #
 
 class Trie:
