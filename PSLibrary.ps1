@@ -582,15 +582,15 @@ Function Select-Option {
 				$Map[$Short] = $Index
 				#Add the short label with the help message to the help array
 				#Have to store the output to consume it
-				$Nil = $Disp.Add(@($Short, $Item.HelpMessage))
+				$Null = $Disp.Add(@($Short, $Item.HelpMessage))
 			} Else {
 				#If no ampersand, add the long label and the help message to the help array
-				$Nil = $Disp.Add(@($Long, $Item.HelpMessage))
+				$Null = $Disp.Add(@($Long, $Item.HelpMessage))
 			}
 			#If the index is less than the default, add the option to the pre-default element in the prompt string array
 			#If the index is greater than the default, add the option to the post-default element
 			#And if the index is equal to the default, add the option to the default element
-			$Nil = $Pstr[(($Index -ge $DefaultOption) + ($Index -gt $DefaultOption))].add("[$Short] $Long")
+			$Null = $Pstr[(($Index -ge $DefaultOption) + ($Index -gt $DefaultOption))].add("[$Short] $Long")
 			#Map the long label to the index number and increment the index number
 			$Map[$Long] = $Index++
 		}
@@ -609,12 +609,12 @@ Function Select-Option {
 		}
 		#If first element isn't default, append a space
 		If ($Pstr[0]) {
-			$Nil = $Pstr[0].Add(" ")
+			$Null = $Pstr[0].Add(" ")
 		}
 		#Default option is always present
-		$Nil = $Pstr[1].Add(" ")
+		$Null = $Pstr[1].Add(" ")
 		#Append the help message to the post-default element in the prompt string array
-		$Nil = $Pstr[2].Add("[?] Help (default is ""$DefOp""): ")
+		$Null = $Pstr[2].Add("[?] Help (default is ""$DefOp""): ")
 		
 		#And write the prompt string array (the options) with the default in yellow
 		#Don't include a trailing newline
@@ -1527,4 +1527,86 @@ Function Restart-Process {
 		Write-Host "$WriteName process started."
 	}
 	Return $True
+}
+
+Function Format-String {
+	Param (
+		[Parameter(Position=0, ValueFromRemainingArguments=$True)]
+		[String[]]$String,
+		
+		[Int]$Length = $($Host.UI.RawUI.WindowSize.Width),
+		
+		[Int]$Indent = 0,
+		
+		[String]$WordChars = "\w",
+		
+		[Switch]$Trim,
+		
+		[Switch]$TrimStart,
+		
+		[Switch]$TrimEnd,
+		
+		[Switch]$Wrap,
+		
+		[Switch]$Truncate,
+		
+		[Switch]$Stream
+	)
+	
+	If ($Wrap -and $Truncate) {
+		Throw "Cannot both truncate and wrap a string!"
+	}
+	
+	$OutP = New-Object System.Collections.ArrayList
+	$Length -= $Indent
+	If ($WordChars[0] -eq "[" -and $WordChars[-1] -eq "]") {
+		$WordChars = $WordChars.SubString(1, $WordChars.Length-2)
+	}
+	
+	ForEach ($Line in $String) {
+		If ($Line.TrimStart()) {
+			$Pref = $Line.Remove($Line.Length-$Line.TrimStart().Length)
+		} Else {
+			$Pref = ""
+		}
+		$Line = $Line.Trim()
+		If ($Wrap) {
+			$Last = 0
+			For ($Cursor = $Length; $Cursor -lt $Line.Length; $Cursor += $Length) {
+				While ($Cursor -ge $Last -and $Line[--$Cursor] -match "[$WordChars]") {}
+				If ($Cursor -le $Last) {
+					$Cursor += $Length
+				}
+				$Null = $Outp.Add("$(" "*$Indent)$Pref$($Line.SubString($Last, ++$Cursor-$Last).Trim())")
+				$Pref = ""
+				$Last = $Cursor
+			}
+			$Line = $Line.SubString($Last).Trim()
+		} ElseIf ($Truncate) {
+			$Line = "$Pref$Line"
+			If ($Line.Length -gt $Length) {
+				$Line = "$($Line.Remove($Length-3))..."
+			}
+		} Else {
+			While ($Line.Length -gt $Length) {
+				$Null = $Outp.Add("$(" "*$Indent)$Pref$($Line.Remove($Length))")
+				$Pref = ""
+				$Line = $Line.SubString($Length)
+			}
+		}
+		$Null = $Outp.Add("$(" "*$Indent)$Line")
+	}
+	
+	While (($Trim -or $TrimStart) -and $Outp[0].Trim() -eq "") {
+		$Outp.RemoveAt(0)
+	}
+	While (($Trim -or $TrimEnd) -and $Outp.Item($Outp.Count-1).Trim() -eq "") {
+		$Outp.RemoveAt($Outp.Count-1)
+	}
+	
+	If ($Stream) {
+		Return $Outp
+	} Else {
+		Return $($Outp -join "`r`n")
+	}
 }
