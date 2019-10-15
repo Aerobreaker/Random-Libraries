@@ -1534,11 +1534,12 @@ Function Format-String {
 		[Parameter(Position=0, ValueFromRemainingArguments=$True)]
 		[String[]]$String,
 		
+		[ValidateScript({If ($Truncate) {$_ -ge 4} Else {$_ -ge 1}})]
 		[Int]$Width = $($Host.UI.RawUI.WindowSize.Width),
 		
 		[Int]$Indent = 0,
 		
-		[String]$WordChars = "\w",
+		[String]$WordChars = "^\s-",
 		
 		[Switch]$Trim,
 		
@@ -1555,44 +1556,45 @@ Function Format-String {
 		[Switch]$Stream
 	)
 	
-	If ($Wrap -and $Truncate) {
-		Throw "Cannot both truncate and wrap a string!"
+	If (([bool]$Wrap + [bool]$WordWrap + [bool]$Truncate) -gt 1) {
+		Throw "Cannot mix truncation and wrapping methods!"
 	}
 	
-	$OutP = New-Object System.Collections.ArrayList
+	If ($WordWrap -and $Width -eq 1) {
+		$WordWrap = $False
+		$Wrap = $True
+		$String = $String.ForEach({$_.Replace(" ", "")})
+	}
+	
+	$Outp = New-Object System.Collections.ArrayList
 	$Width -= $Indent
 	If ($WordChars[0] -eq "[" -and $WordChars[-1] -eq "]") {
 		$WordChars = $WordChars.SubString(1, $WordChars.Length-2)
 	}
 	
 	ForEach ($Line in $String) {
-		If ($Line.TrimStart()) {
-			$Pref = $Line.Remove($Line.Length-$Line.TrimStart().Length)
-		} Else {
-			$Pref = ""
-		}
-		$Line = $Line.Trim()
+		$Line = $Line.TrimEnd()
 		If ($WordWrap) {
 			$Last = 0
 			For ($Cursor = $Width; $Cursor -lt $Line.Length; $Cursor += $Width) {
-				While ($Cursor -ge $Last -and $Line[--$Cursor] -match "[$WordChars]") {}
+				While ($Cursor -ge $Last -and $Line[$Cursor] -match "[$WordChars]") {
+					$Cursor--
+				}
 				If ($Cursor -le $Last) {
 					$Cursor += $Width
 				}
-				$Null = $Outp.Add("$(" "*$Indent)$Pref$($Line.SubString($Last, ++$Cursor-$Last).Trim())")
-				$Pref = ""
+				$Null = $Outp.Add("$(" "*$Indent)$($Line.SubString($Last, $Cursor-$Last).TrimEnd())")
+				While (!($Line.SubString($Cursor, 1).Trim())) {
+					$Cursor++
+				}
 				$Last = $Cursor
 			}
-			$Line = $Line.SubString($Last).Trim()
-		} ElseIf ($Truncate) {
-			$Line = "$Pref$Line"
-			If ($Line.Length -gt $Width) {
-				$Line = "$($Line.Remove($Width-3))..."
-			}
+			$Line = $Line.SubString($Last)
+		} ElseIf ($Truncate -and $Line.Length -gt $Width) {
+			$Line = "$($Line.Remove($Width-3))..."
 		} ElseIf ($Wrap) {
 			While ($Line.Length -gt $Width) {
-				$Null = $Outp.Add("$(" "*$Indent)$Pref$($Line.Remove($Width))")
-				$Pref = ""
+				$Null = $Outp.Add("$(" "*$Indent)$($Line.Remove($Width))")
 				$Line = $Line.SubString($Width)
 			}
 		}
@@ -1618,6 +1620,7 @@ Function Get-MemberRecurse {
 		[Parameter(Position=0)]
 		[PSObject]$Obj,
 		
+		[ValidateRange(1, [Int]::MaxValue)]
 		[Int]$Width = $($Host.UI.RawUI.WindowSize.Width),
 		
 		[Switch]$NoTruncate,
@@ -1673,14 +1676,14 @@ Function Get-MemberRecurse {
 			[Hashtable]$Groups,
 			[Int]$Indent = 0
 		)
-		$TypeName = $Obj.GetType()
-		If (!$Groups.Contains($TypeName)) {
-			$Groups[$TypeName] = New-Object System.Collections.ArrayList
+		$Type = $Obj.GetType()
+		If (!$Groups.Contains($Type)) {
+			$Groups[$Type] = New-Object System.Collections.ArrayList
 		}
-		$Null = $Groups[$TypeName].Add($Name)
-		If (!$Seen[$TypeName]) {
-			$Seen[$TypeName] = $True
-			$Null = $Output.Add(@($Indent, "${name}:", $(Format-GM $(Get-Member -InputObject $Obj) -Stream), $TypeName))
+		$Null = $Groups[$Type].Add($Name)
+		If (!$Seen[$Type]) {
+			$Seen[$Type] = $True
+			$Null = $Output.Add(@($Indent, "${name}:", $(Format-GM $(Get-Member -InputObject $Obj) -Stream), $Type))
 			ForEach ($Child in $(Get-Member -InputObject $Obj -MemberType Property)) {
 				Try {
 					$ChildObj = Select-Object -InputObject $Obj -ExpandProperty $Child.Name -ErrorAction Stop
@@ -1691,10 +1694,10 @@ Function Get-MemberRecurse {
 					} Catch {
 						$ChildName = "Unknown Type"
 					}
-					$Null = $Output.Add(@(($Indent+2), "$Name.$($Child.Name)", "Unable to get members!", $TypeName))
+					$Null = $Output.Add(@(($Indent+2), "$Name.$($Child.Name)", "Unable to get members!", $Type))
 				}
 			}
-			$Seen.Remove($TypeName)
+			$Seen.Remove($Type)
 		}
 	}
 	
@@ -1707,24 +1710,26 @@ Function Get-MemberRecurse {
 
 	If ($Group) {
 		ForEach ($Entry in $Output) {
-			$TypeName = $Entry[3]
-			If ($TypeName.Name) {
-				$TypeName = $TypeName.Name
+			$Type = $Entry[3]
+			If ($Type.Name) {
+				$TypeName = $Type.Name
+			} Else {
+				$TypeName = $Type
 			}
-			If (!$Seen.Contains($TypeName)) {
-				$Seen[$TypeName] = $True
+			If (!$Seen.Contains($Type)) {
+				$Seen[$Type] = $True
 				$DispArray = $Entry[2]
 				if ($NoTruncate) {
-					$GroupStr = Format-String -Trim -Indent 2 $($Groups[$TypeName] -join ", ")
-					$DispStr = Format-String -Trim -Indent 2 @DispArray
+					$GroupStr = Format-String -Trim -Indent 4 $($Groups[$Type] -join ", ")
+					$DispStr = Format-String -Trim -Indent 4 @DispArray
 				} Else {
-					$GroupStr = Format-String -Trim -Indent 2 -WordWrap -WordChars "\w\." -Width $Width $($Groups[$TypeName] -join ", ")
-					$DispStr = Format-String -Trim -Indent 2 -Truncate -Width $Width @DispArray
+					$GroupStr = Format-String -Trim -Indent 4 -WordWrap -WordChars "\w\." -Width $Width $($Groups[$Type] -join ", ")
+					$DispStr = Format-String -Trim -Indent 4 -Truncate -Width $Width @DispArray
 				}
 				Write-Output "`r`n"
-				Write-Output "Type $typename contains the following objects:"
+				Write-Output "Type $TypeName contains the following objects:"
 				Write-Output $GroupStr
-				Write-Output "Members of ${typename}:"
+				Write-Output "Members of ${TypeName}:"
 				Write-Output $DispStr
 			}
 			
