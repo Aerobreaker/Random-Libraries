@@ -1,5 +1,6 @@
 """Simply a library of random useful functions."""
 from __future__ import generator_stop
+from functools import wraps
 
 def group_count(iterable):
     """Return the groups and their counts from an iterable."""
@@ -67,26 +68,25 @@ def groupwise(iterable, num=2):
 #
 
 
-def base_converter(num_expr, base, num_decimals=12):
+def base_converter(num_expr, base, num_decimals=12): #pylint: disable=too-many-branches
     """Converts input expression to the provided base.
-    
+
     To convert digits to decimal values from the provided base, use the
     following dictionary:
         {str(i) if i < 10 else chr(55+i):i for i in range(36)}
-    
+
     Args:
         num_expr: The number or numeric string to be converted to another base
         base: The base to which to convert (valid values are 2 to 36 inclusive)
         num_decimals: The maximum number of digits after the decimal place
-    
+
     Returns:
         A string representation of the provided numeric expression in the
         provided base.
-    
+
     Raises:
         ValueError: The base argument is outside the bounds of 2 to 36 inclusive
     """
-    from collections import deque
     from fractions import Fraction
     if base > 36:
         raise ValueError('cannot represent all digits in bases > 36!')
@@ -97,7 +97,7 @@ def base_converter(num_expr, base, num_decimals=12):
     numbers = {v:k for k, v in digits.items()}
     #Use fractions to avoid floating point errors.
     num = Fraction(num_expr)
-    pow = Fraction(base, 1)
+    power = Fraction(base, 1)
     outp = []
     #Track number of decimal places to prevent running forever.  With the
     #addition of repeated digit tracking, this is more for space conditions than
@@ -113,18 +113,18 @@ def base_converter(num_expr, base, num_decimals=12):
     seen = {}
     #First, find the size of the largest digit by looking for the lowest power
     #of base which is greater than the input.
-    while num >= pow:
-        pow *= base
+    while num >= power:
+        power *= base
     #Drop down by one to get the largest digit
-    pow /= base
+    power /= base
     #While we're non-fractional, it's pretty easy.  Move down by on digit each
     #loop, decrementing the input and appending the appropriate digit to the
     #output.
-    while pow >= 1 or (num and decimals < num_decimals):
-        dig = num // pow
-        num -= dig * pow
+    while power >= 1 or (num and decimals < num_decimals):
+        dig = num // power
+        num -= dig * power
         ratio = Fraction(num.numerator,
-                         Fraction(num.denominator, pow.denominator))
+                         Fraction(num.denominator, power.denominator))
         outp.append(digits[dig])
         #If a repeating digit is found, strip all the digits since the last time
         #this ratio was seen and put them in parens.
@@ -133,19 +133,18 @@ def base_converter(num_expr, base, num_decimals=12):
             break
         #If power > 1, nothing special happens.  But if there's a fractional
         #part and power <= 1, insert the '.' and start building the seen
-        #dictionary.  While computing the fractional part, track number of 
+        #dictionary.  While computing the fractional part, track number of
         #decimal places and update the dictionary of seen ratios.
-        if num and pow == 1:
+        if num and power == 1:
             outp.append('.')
-            seen[ratio] = len(outp)
-        elif pow < 1:
+        if power <= 1:
             seen[ratio] = len(outp)
             decimals += 1
-        pow /= base
+        power /= base
     else:
         #If we didn't break due to repeating digits, round up and indicate
         #that rounding occurred, if appropriate.
-        if num // pow > Fraction(base, 2):
+        if num // power > Fraction(base, 2):
             i = -1
             while numbers[outp[i]]+1 >= base:
                 outp[i] = digits[(numbers[outp[i]]+1) % base]
@@ -530,7 +529,7 @@ def add_bit(num, bit=None):
     #aren't powers of two may not be addable using this method
     if bit & num:
         #This flips on all bits right of bit and turns off bit
-        bitones = ~bit ^ -bit ^ bit
+        bitones = ~bit ^ -bit ^ bit #pylint: disable=invalid-unary-operand-type
         #This lets us get the least significant 0 bit greater than bit
         ls0bmask = num | bitones
         ls0bit = get_lsb(~ls0bmask)
@@ -540,8 +539,7 @@ def add_bit(num, bit=None):
         mask = ls0b_ones ^ bitones
         #Apply mask to original number
         return num ^ mask
-    else:
-        return num | bit
+    return num | bit
 #
 
 class Trie:
@@ -756,82 +754,100 @@ def merge_sort_p(inp):
     return out
 #
 
-from functools import wraps
-
 class ClassPropertyMetaclass(type):
+    """docstring"""
     _class_property = ['value']
     _instance_readable_class_property = 'VALUE'
     _instance_readwritable_class_property = 'value'
 
     @wraps(type.__init__)
     def __init__(cls, *args, **kwargs):
+        """docstring"""
         super().__init__(*args, **kwargs)
 
     @property
     def class_property(cls):
+        """docstring"""
         return cls._class_property
 
     @class_property.setter
-    def class_property(cls, input):
-        if input:
-            cls._class_property.append(input)
+    def class_property(cls, inp):
+        """docstring"""
+        if inp:
+            cls._class_property.append(inp)
         else:
-            cls._class_property.append(input)
+            cls._class_property.append(inp)
 
     @property
     def instance_readwritable_class_property(cls):
+        """docstring"""
         return cls._instance_readwritable_class_property
 
     @instance_readwritable_class_property.setter
-    def instance_readwritable_class_property(cls, input):
-        if input:
-            cls._instance_readwritable_class_property = input
+    def instance_readwritable_class_property(cls, inp):
+        """docstring"""
+        if inp:
+            cls._instance_readwritable_class_property = inp
         else:
-            cls._instance_readwritable_class_property = input
+            cls._instance_readwritable_class_property = inp
 
     @property
     def instance_readable_class_property(cls):
+        """docstring"""
         return cls._instance_readable_class_property
 
     @instance_readable_class_property.setter
-    def instance_readable_class_property(cls, input):
-        if input:
-            cls._instance_readable_class_property = input
+    def instance_readable_class_property(cls, inp):
+        """docstring"""
+        if inp:
+            cls._instance_readable_class_property = inp
         else:
-            cls._instance_readable_class_property = input
+            cls._instance_readable_class_property = inp
 
 
 class ClassProperty(metaclass=ClassPropertyMetaclass):
+    """docstring"""
+
     @property
     def instance_readwritable_class_property(self):
+        """docstring"""
         return type(self).instance_readwritable_class_property
 
     @instance_readwritable_class_property.setter
-    def instance_readwritable_class_property(self, input):
-        if input:
-            type(self).instance_readwritable_class_property = input
+    def instance_readwritable_class_property(self, inp):
+        """docstring"""
+        if inp:
+            type(self).instance_readwritable_class_property = inp
         else:
-            type(self).instance_readwritable_class_property = input
+            type(self).instance_readwritable_class_property = inp
 
     @property
     def instance_readable_class_property(self):
+        """docstring"""
         return type(self).instance_readable_class_property
 
 
 class InstanceTrackingClassMeta(type):
+    """docstring"""
+
     @wraps(type.__init__)
     def __init__(cls, *args, **kwargs):
+        """docstring"""
         from weakref import WeakValueDictionary
         super().__init__(*args, **kwargs)
         cls._instances = WeakValueDictionary()
 
     @property
     def instances(cls):
+        """docstring"""
         return list(cls._instances.values())
 
 
-class InstanceTrackingClass(metaclass=InstanceTrackingClassMeta):
-    def __new__(cls, *args, **kwargs):
+class InstanceTrackingClass(metaclass=InstanceTrackingClassMeta): #pylint: disable=too-few-public-methods
+    """docstring"""
+
+    def __new__(cls, *args, **kwargs): #pylint: disable=unused-argument
+        """docstring"""
         new = super().__new__(cls)
         cls._instances[id(new)] = new
         return new
