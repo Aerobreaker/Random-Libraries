@@ -144,7 +144,7 @@ def base_converter(num_expr, base, num_decimals=12):
     else:
         #If we didn't break due to repeating digits, round up and indicate
         #that rounding occurred, if appropriate.
-        if num // pow > 4:
+        if num // pow > Fraction(base, 2):
             i = -1
             while numbers[outp[i]]+1 >= base:
                 outp[i] = digits[(numbers[outp[i]]+1) % base]
