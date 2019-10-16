@@ -137,6 +137,7 @@ def base_converter(num_expr, base, num_decimals=12):
         #decimal places and update the dictionary of seen ratios.
         if num and pow == 1:
             outp.append('.')
+            seen[ratio] = len(outp)
         elif pow <= 1:
             seen[ratio] = len(outp)
             decimals += 1
