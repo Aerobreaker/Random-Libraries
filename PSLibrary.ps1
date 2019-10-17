@@ -1723,7 +1723,7 @@ Function Get-MemberRecurse {
 					$GroupStr = Format-String -Trim -Indent 4 $($Groups[$Type] -join ", ")
 					$DispStr = Format-String -Trim -Indent 4 @DispArray
 				} Else {
-					$GroupStr = Format-String -Trim -Indent 4 -WordWrap -WordChars "\w\." -Width $Width $($Groups[$Type] -join ", ")
+					$GroupStr = Format-String -Trim -Indent 4 -WordWrap -Width $Width $($Groups[$Type] -join ", ")
 					$DispStr = Format-String -Trim -Indent 4 -Truncate -Width $Width @DispArray
 				}
 				Write-Output "`r`n"
