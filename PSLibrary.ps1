@@ -506,17 +506,17 @@ Function Select-Option {
 		[Parameter(Position=4, ParameterSetName='Timed')]
 		#Default to a timeout of 10 seconds
 		[Timespan]$Timeout = [Timespan]::FromSeconds(10),
-		
+
 		#Take a timespan as the sixth parameter in the "Timed" option set
 		[Parameter(Position=5, ParameterSetName='Timed')]
 		#Default of a timeout of 1 second after pressing a key
 		[Timespan]$KeyDelay = [Timespan]::FromSeconds(1),
-		
+
 		#Take a timespan as the seventh parameter in the "Timed" option set
 		[Parameter(Position=6, ParameterSetName='Timed')]
 		#Default to checking for keys every 1/10th of a second (100 ms)
 		[Timespan]$CheckInt = [Timespan]::FromMilliseconds(100),
-		
+
 		#Take a switch parameter in the "Timed" option set, for easy switching to timed mode
 		[Parameter(ParameterSetName='Timed')]
 		[Switch]$Timed
@@ -551,14 +551,14 @@ Function Select-Option {
 			#Re-run in un-timed mode to throw the correct error
 			Return Select-Option $PromptTitle $PromptQuestion $OptionList $DefaultOption
 		}
-		
+
 		#Write a newline
 		Write-Host ""
 		#Write the title
 		Write-Host $PromptTitle
 		#Write the question
 		Write-Host $PromptQuestion
-		
+
 		#Create an empty hashtable to hold valid inputs
 		$Map = @{}
 		#Create a new arraylist for an array-like object which can easily be appended to
@@ -615,11 +615,11 @@ Function Select-Option {
 		$Null = $Pstr[1].Add(" ")
 		#Append the help message to the post-default element in the prompt string array
 		$Null = $Pstr[2].Add("[?] Help (default is ""$DefOp""): ")
-		
+
 		#And write the prompt string array (the options) with the default in yellow
 		#Don't include a trailing newline
 		Write-Prompt -NoNewLine $Pstr
-		
+
 		#Start a pair of timers
 		$Timer = [Diagnostics.StopWatch]::StartNew()
 		$Last = [Diagnostics.StopWatch]::StartNew()
@@ -1017,54 +1017,54 @@ Function Wait-ProcessIdle {
 		[Parameter(Mandatory=$True, Position=0, ParameterSetName="WriteName")]
 		[Alias("Name","PN")]
 		[String]$ProcessName,
-		
+
 		#Take a process to wait for as the first parameter in the "Proc" and "WriteProc" sets
 		[Parameter(Mandatory=$True, Position=0, ParameterSetName="Proc")]
 		[Parameter(Mandatory=$True, Position=0, ParameterSetName="WriteProc")]
 		[Alias("Proc")]
 		[Diagnostics.Process]$Process,
-		
+
 		#Take a timespan indicating how long the program must be idle for as the second parameter
 		[Parameter(Position=1)]
 		[Alias("Stable","Idle","IdleTime")]
 		[Timespan]$StableTime = [Timespan]::FromMilliseconds(500),
-		
+
 		#Take a timespan indicating how frequently to check CPU time as the third parameter
 		[Parameter(Position=2)]
 		[Alias("CheckInt","Check")]
 		[Timespan]$CheckInterval = [Timespan]::FromMilliseconds(100),
-		
+
 		#Take a switch in the "Name" sets to cause the function to wait for the process to start if it's not running
 		[Parameter(ParameterSetName="Name")]
 		[Parameter(ParameterSetName="WriteName")]
 		[Alias("Wait")]
 		[Switch]$WaitStart,
-		
+
 		#Take a timespan as the 4th parameter in the "Name" sets representing the time to wait between checks to see if the process is running
 		[Parameter(Position=3, ParameterSetName="Name")]
 		[Parameter(Position=3, ParameterSetName="WriteName")]
 		[Alias("WaitTime","WI")]
 		[Timespan]$WaitInterval = [Timespan]::FromSeconds(1),
-		
+
 		#Take a timespan as the 5th parameter in the "Name" sets representing the time after which to abort waiting for the process to start
 		[Parameter(Position=4, ParameterSetName="Name")]
 		[Parameter(Position=4, ParameterSetName="WriteName")]
 		[Alias("WT")]
 		[Timespan]$WaitTimeout = [Timespan]::FromSeconds(120),
-		
+
 		#Take a switch to force the function into one of the "Write" sets
 		[Parameter(ParameterSetName="WriteName")]
 		[Parameter(ParameterSetName="WriteProc")]
 		[Alias("Write")]
 		[Switch]$WriteOut,
-		
+
 		#Take a string to display as the process name as the 6th parameter in the "Write" sets
 		[Parameter(Mandatory=$True, Position=5, ParameterSetName="WriteName")]
 		[Parameter(Mandatory=$True, Position=5, ParameterSetName="WriteProc")]
 		[Alias("Display","WN")]
 		[String]$WriteName
 	)
-	
+
 	#If we're in one of the "Name" parameter sets
 	If ($PSCmdlet.ParameterSetName -like "*Name") {
 		#Use Get-Process to find the running executable
@@ -1108,12 +1108,12 @@ Function Wait-ProcessIdle {
 			Throw "Invalid process specified!"
 		}
 	}
-	
+
 	#If writing output, alert the user that we're waiting for the process
 	If ($WriteOut) {
 		Write-Output "Waiting for $WriteName process to idle..."
 	}
-	
+
 	#Wait for the process to start getting time on the CPU
 	While ($Process.CPU -eq 0) {
 		#Sleep for the check interval
@@ -1130,7 +1130,7 @@ Function Wait-ProcessIdle {
 			Return $False
 		}
 	}
-	
+
 	#Start the last CPU time at -1, because it's impossible to match that initially - this ensures that the process will be idle for the full idle time
 	$LastCPU = -1
 	#Start a timer
@@ -1158,7 +1158,7 @@ Function Wait-ProcessIdle {
 			Return $False
 		}
 	}
-	
+
 	#If writing output, alert the user that the process has idled for the requisite time
 	If ($WriteOut) {
 		Write-Output "$WriteName process has idled."
@@ -1177,54 +1177,54 @@ Function Wait-ProcessMainWindow {
 		[Parameter(Mandatory=$True, Position=0, ParameterSetName="WriteName")]
 		[Alias("Name","PN")]
 		[String]$ProcessName,
-		
+
 		#Take a process to wait for as the first parameter in the "Proc" and "WriteProc" sets
 		[Parameter(Mandatory=$True, Position=0, ParameterSetName="Proc")]
 		[Parameter(Mandatory=$True, Position=0, ParameterSetName="WriteProc")]
 		[Alias("Proc")]
 		[Diagnostics.Process]$Process,
-		
+
 		#Take a pointer indicating the original window handle
 		[Parameter(Position=1)]
 		[Alias("Handle","OH")]
 		[IntPtr]$OriginalHandle = 0,
-		
+
 		#Take a timespan indicating how frequently to check CPU time as the third parameter
 		[Parameter(Position=2)]
 		[Alias("CheckInt","Check")]
 		[Timespan]$CheckInterval = [Timespan]::FromMilliseconds(100),
-		
+
 		#Take a switch in the "Name" sets to cause the function to wait for the process to start if it's not running
 		[Parameter(ParameterSetName="Name")]
 		[Parameter(ParameterSetName="WriteName")]
 		[Alias("Wait")]
 		[Switch]$WaitStart,
-		
+
 		#Take a timespan as the 4th parameter in the "Name" sets representing the time to wait between checks to see if the process is running
 		[Parameter(Position=3, ParameterSetName="Name")]
 		[Parameter(Position=3, ParameterSetName="WriteName")]
 		[Alias("WaitTime","WI")]
 		[Timespan]$WaitInterval = [Timespan]::FromSeconds(1),
-		
+
 		#Take a timespan as the 5th parameter in the "Name" sets representing the time after which to abort waiting for the process to start
 		[Parameter(Position=4, ParameterSetName="Name")]
 		[Parameter(Position=4, ParameterSetName="WriteName")]
 		[Alias("WT")]
 		[Timespan]$WaitTimeout = [Timespan]::FromSeconds(120),
-		
+
 		#Take a switch to force the function into one of the "Write" sets
 		[Parameter(ParameterSetName="WriteName")]
 		[Parameter(ParameterSetName="WriteProc")]
 		[Alias("Write")]
 		[Switch]$WriteOut,
-		
+
 		#Take a string to display as the process name as the 6th parameter in the "Write" sets
 		[Parameter(Mandatory=$True, Position=5, ParameterSetName="WriteName")]
 		[Parameter(Mandatory=$True, Position=5, ParameterSetName="WriteProc")]
 		[Alias("Display","WN")]
 		[String]$WriteName
 	)
-	
+
 	#If we're in one of the "Name" parameter sets
 	If ($PSCmdlet.ParameterSetName -like "*Name") {
 		#Use Get-Process to find the running executable
@@ -1268,12 +1268,12 @@ Function Wait-ProcessMainWindow {
 			Throw "Invalid process specified!"
 		}
 	}
-	
+
 	#If writing output, alert the user that we're waiting for the main window handle
 	If ($WriteOut) {
 		Write-Output "Waiting for $WriteName process main window handle to change..."
 	}
-	
+
 	#Loop while the main window handle has not changed
 	While ($Process.MainWindowHandle -eq $OriginalHandle) {
 		#Sleep for the check interval
@@ -1290,7 +1290,7 @@ Function Wait-ProcessMainWindow {
 			Return $False
 		}
 	}
-	
+
 	#If writing output, alert the user to the updated main window handle
 	If ($WriteOut) {
 		Write-Output "$WriteName process main window handle is now $($Process.MainWindowHandle)."
@@ -1309,43 +1309,43 @@ Function Wait-ProcessClose {
 		[Parameter(Mandatory=$True, Position=0, ParameterSetName="WriteName")]
 		[Alias("Name","PN")]
 		[String]$ProcessName,
-		
+
 		#Take a process to wait for as the first parameter in the "Proc" and "WriteProc" sets
 		[Parameter(Mandatory=$True, Position=0, ParameterSetName="Proc")]
 		[Parameter(Mandatory=$True, Position=0, ParameterSetName="WriteProc")]
 		[Alias("Proc")]
 		[Diagnostics.Process]$Process,
-		
+
 		#Take a timespan indicating how frequently to check the process
 		[Parameter(Position=1)]
 		[Alias("CheckInt","Check")]
 		[Timespan]$CheckInterval = [Timespan]::FromMilliseconds(100),
-		
+
 		#Take a timespan indicating the maximum time to wait
 		[Parameter(Position=2)]
 		[Alias("Time")]
 		[Timespan]$Timeout = [Timespan]::FromMinutes(2),
-		
+
 		#Take a switch to force the function into one of the "Write" sets
 		[Parameter(ParameterSetName="WriteName")]
 		[Parameter(ParameterSetName="WriteProc")]
 		[Alias("Write")]
 		[Switch]$WriteOut,
-		
+
 		#Take a string to display as the process name as the 6th parameter in the "Write" sets
 		[Parameter(Mandatory=$True, Position=3, ParameterSetName="WriteName")]
 		[Parameter(Mandatory=$True, Position=3, ParameterSetName="WriteProc")]
 		[Alias("Display","WN")]
 		[String]$WriteName
 	)
-	
+
 	#If we're in one of the "Name" parameter sets
 	If ($PSCmdlet.ParameterSetName -like "*Name") {
 		#Use Get-Process to find the running executable
 		$Process = Get-Process -ErrorAction SilentlyContinue -Name $ProcessName
 	#Otherwise, if we're in one of the "Proc" sets
 	}
-	
+
 	#If the user did not specify a process or if it exited, return true
 	If (!$Process -or $Process.HasExited) {
 		If ($WriteOut) {
@@ -1353,12 +1353,12 @@ Function Wait-ProcessClose {
 			Return $True
 		}
 	}
-	
+
 	#If writing output, alert the user that we're waiting for the process
 	If ($WriteOut) {
 		Write-Output "Waiting for $WriteName process to exit..."
 	}
-	
+
 	#Start a timer
 	$Timer = [Diagnostics.Stopwatch]::StartNew()
 	#Loop while the idle time has not elapsed
@@ -1378,7 +1378,7 @@ Function Wait-ProcessClose {
 			Return $False
 		}
 	}
-	
+
 	#If writing output, alert the user that the process has idled for the requisite time
 	If ($WriteOut) {
 		Write-Output "$WriteName process has exited."
@@ -1398,7 +1398,7 @@ Function Restart-Process {
 		[Parameter(Mandatory=$True, Position=0, ParameterSetName="ExtWriteName")]
 		[Alias("Name", "PN")]
 		[String]$ProcessName,
-		
+
 		[Parameter(Mandatory=$True, Position=0, ParameterSetName="Proc")]
 		[Parameter(Mandatory=$True, Position=0, ParameterSetName="WriteProc")]
 		[Parameter(Mandatory=$True, Position=0, ParameterSetName="FlagsProc")]
@@ -1407,11 +1407,11 @@ Function Restart-Process {
 		[Parameter(Mandatory=$True, Position=0, ParameterSetName="ExtWriteName")]
 		[Alias("Proc")]
 		[Diagnostics.Process]$Process,
-		
+
 		[Parameter(Position=1)]
 		[Alias("Args")]
 		[String]$StartArgs="",
-		
+
 		[Parameter(ParameterSetName="WriteName")]
 		[Parameter(ParameterSetName="WriteProc")]
 		[Parameter(ParameterSetName="FlagsWriteName")]
@@ -1420,7 +1420,7 @@ Function Restart-Process {
 		[Parameter(ParameterSetName="ExtWriteProc")]
 		[Alias("Write")]
 		[Switch]$WriteOut,
-		
+
 		[Parameter(Mandatory=$True, Position=2, ParameterSetName="WriteName")]
 		[Parameter(Mandatory=$True, Position=2, ParameterSetName="WriteProc")]
 		[Parameter(Mandatory=$True, Position=2, ParameterSetName="FlagsWriteName")]
@@ -1429,57 +1429,56 @@ Function Restart-Process {
 		[Parameter(Mandatory=$True, Position=2, ParameterSetName="ExtWriteProc")]
 		[Alias("Display", "WN")]
 		[String]$WriteName,
-		
-		
+
 		[Parameter(ParameterSetName="FlagsName")]
 		[Parameter(ParameterSetName="FlagsWriteName")]
 		[Parameter(ParameterSetName="FlagsProc")]
 		[Parameter(ParameterSetName="FlagsWriteProc")]
 		[Switch]$UseFlags,
-		
+
 		[Parameter(Mandatory=$True, Position=3, ParameterSetName="FlagsName")]
 		[Parameter(Mandatory=$True, Position=3, ParameterSetName="FlagsWriteName")]
 		[Parameter(Mandatory=$True, Position=3, ParameterSetName="FlagsProc")]
 		[Parameter(Mandatory=$True, Position=3, ParameterSetName="FlagsWriteProc")]
 		[String]$Flags,
-		
+
 		[Parameter(ParameterSetName="ExtName")]
 		[Parameter(ParameterSetName="ExtWriteName")]
 		[Parameter(ParameterSetName="ExtProc")]
 		[Parameter(ParameterSetName="ExtWriteProc")]
 		[Switch]$UseExternal,
-		
+
 		[Parameter(Mandatory=$True, Position=3, ParameterSetName="ExtName")]
 		[Parameter(Mandatory=$True, Position=3, ParameterSetName="ExtWriteName")]
 		[Parameter(Mandatory=$True, Position=3, ParameterSetName="ExtProc")]
 		[Parameter(Mandatory=$True, Position=3, ParameterSetName="ExtWriteProc")]
 		[String]$External,
-		
+
 		[Alias("Force", "Kill")]
 		[Switch]$ForceClose,
-		
+
 		[Parameter(Position=4)]
 		[Alias("CheckInt","Check")]
 		[Timespan]$CheckInterval = [Timespan]::FromMilliseconds(100),
-		
+
 		[Parameter(Position=5)]
 		[Alias("Time")]
 		[Timespan]$Timeout = [Timespan]::FromSeconds(30)
 	)
-	
+
 	If ($PSCmdlet.ParameterSetName -like "*Name") {
 		If ($WriteOut) {
 			Write-Output "Acquiring handle for $WriteName process..."
 		}
 		$Process = Get-Process -ErrorAction SilentlyContinue -Name $ProcessName
 	}
-	
+
 	If (!$Process -or $Process.HasExited) {
 		Throw "Invalid process specified!"
 	}
-	
+
 	$Path = $Process.Path
-	
+
 	If ($UseExternal) {
 		If ($WriteOut) {
 			Write-Output "Stopping $WriteName process using external command: ""$External""..."
@@ -1496,7 +1495,7 @@ Function Restart-Process {
 		}
 		$Process.CloseMainWindow()
 	}
-	
+
 	If ($ForceClose -and !$(Wait-ProcessClose $Process -WriteOut:$WriteOut -WriteName $WriteName -CheckInterval $CheckInterval -Timeout $Timeout)) {
 		If ($WriteOut) {
 			Write-Output "$WriteName process is not stopping.  Force closing..."
@@ -1510,19 +1509,19 @@ Function Restart-Process {
 		}
 		Return $False
 	}
-	
+
 	If ($WriteOut -and $StartArgs) {
 		Write-Output "Starting $WriteName process with arguments ""$StartArgs""..."
 	} ElseIf ($WriteOut) {
 		Write-Output "Starting $WriteName process..."
 	}
-	
+
 	If ($StartArgs) {
 		Start-Process $Path -ArgumentList $StartArgs
 	} Else {
 		Start-Process $Path
 	}
-	
+
 	If ($WriteOut) {
 		Write-Output "$WriteName process started."
 	}
@@ -1533,45 +1532,45 @@ Function Format-String {
 	Param (
 		[Parameter(Position=0, ValueFromRemainingArguments=$True)]
 		[String[]]$String,
-		
+
 		[ValidateScript({If ($Truncate) {$_ -ge 4} Else {$_ -ge 1}})]
 		[Int]$Width = $($Host.UI.RawUI.WindowSize.Width),
-		
+
 		[Int]$Indent = 0,
-		
+
 		[String]$WordChars = "^\s-",
-		
+
 		[Switch]$Trim,
-		
+
 		[Switch]$TrimStart,
-		
+
 		[Switch]$TrimEnd,
-		
+
 		[Switch]$WordWrap,
-		
+
 		[Switch]$Truncate,
-		
+
 		[Switch]$Wrap,
-		
+
 		[Switch]$Stream
 	)
-	
+
 	If (([bool]$Wrap + [bool]$WordWrap + [bool]$Truncate) -gt 1) {
 		Throw "Cannot mix truncation and wrapping methods!"
 	}
-	
+
 	If ($WordWrap -and $Width -eq 1) {
 		$WordWrap = $False
 		$Wrap = $True
 		$String = $String.ForEach({$_.Replace(" ", "")})
 	}
-	
+
 	$Outp = New-Object System.Collections.ArrayList
 	$Width -= $Indent
 	If ($WordChars[0] -eq "[" -and $WordChars[-1] -eq "]") {
 		$WordChars = $WordChars.SubString(1, $WordChars.Length-2)
 	}
-	
+
 	ForEach ($Line in $String) {
 		$Line = $Line.TrimEnd()
 		If ($WordWrap) {
@@ -1600,14 +1599,14 @@ Function Format-String {
 		}
 		$Null = $Outp.Add("$(" "*$Indent)$Line")
 	}
-	
+
 	While (($Trim -or $TrimStart) -and $Outp[0].Trim() -eq "") {
 		$Outp.RemoveAt(0)
 	}
 	While (($Trim -or $TrimEnd) -and $Outp.Item($Outp.Count-1).Trim() -eq "") {
 		$Outp.RemoveAt($Outp.Count-1)
 	}
-	
+
 	If ($Stream) {
 		Return $Outp
 	} Else {
@@ -1619,12 +1618,12 @@ Function Get-MemberRecurse {
 	Param(
 		[Parameter(Position=0)]
 		[PSObject]$Obj,
-		
+
 		[ValidateRange(1, [Int]::MaxValue)]
 		[Int]$Width = $($Host.UI.RawUI.WindowSize.Width),
-		
+
 		[Switch]$NoTruncate,
-		
+
 		[Switch]$Group
 	)
 
@@ -1633,10 +1632,10 @@ Function Get-MemberRecurse {
 			[Object[]]$Table,
 			[Switch]$Stream
 		)
-		
+
 		$MaxNameLen = 4
 		$MaxTypeLen = 10
-		
+
 		ForEach ($Entry in $Table) {
 			If ("$($Entry.Name)".Length -gt $MaxNameLen) {
 				$MaxNameLen = "$($Entry.Name)".Length
@@ -1645,21 +1644,21 @@ Function Get-MemberRecurse {
 				$MaxTypeLen = "$($Entry.MemberType)".Length
 			}
 		}
-		
+
 		$MaxNameLen++
 		$MaxTypeLen++
-		
+
 		$Outp = New-Object System.Collections.ArrayList
 		$Null = $Outp.Add("   TypeName: $($Table[0].TypeName)")
 		$Null = $Outp.Add("Name$(" "*($MaxNameLen-4))MemberType$(" "*($MaxTypeLen-10))Definition")
 		$Null = $Outp.Add("----$(" "*($MaxNameLen-4))----------$(" "*($MaxTypeLen-10))----------")
-		
+
 		ForEach ($Entry in $Table) {
 			$EntryName = "$($Entry.Name)"
 			$EntryType = "$($Entry.MemberType)"
 			$Null = $Outp.Add("$($EntryName)$(" "*($MaxNameLen-$EntryName.Length))$($EntryType)$(" "*($MaxTypeLen-$EntryType.Length))$($Entry.Definition)")
 		}
-		
+
 		If ($Stream) {
 			Return $Outp
 		} Else {
@@ -1700,7 +1699,7 @@ Function Get-MemberRecurse {
 			$Seen.Remove($Type)
 		}
 	}
-	
+
 	$Name = $Obj.GetType().Name
 	$Seen = @{}
 	$Output = New-Object System.Collections.ArrayList
@@ -1732,7 +1731,7 @@ Function Get-MemberRecurse {
 				Write-Output "Members of ${TypeName}:"
 				Write-Output $DispStr
 			}
-			
+
 		}
 	} Else {
 		ForEach ($Entry in $Output) {
