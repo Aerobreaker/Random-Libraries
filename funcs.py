@@ -629,9 +629,7 @@ class Trie:
             if char in node.children:
                 node = node.children[char]
             else:
-                new_node = self.Node(char)
-                node.children[char] = new_node
-                node = new_node
+                node.children[char] = node = self.Node(char)
         node.word = True
 
     def get_words(self, node=None):
