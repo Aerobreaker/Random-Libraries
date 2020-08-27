@@ -1748,3 +1748,46 @@ Function Get-MemberRecurse {
 		}
 	}
 }
+
+Function Wait-AnyKey {
+	#Check if running Powershell ISE
+	If ($psISE) {
+		Add-Type -AssemblyName System.Windows.Forms
+		[System.Windows.Forms.MessageBox]::Show("Press any key to continue...")
+	} Else {
+		Write-Host -NoNewLine "Press any key to continue..."
+		$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+		Write-Host ""
+	}
+}
+
+Function Restart-Script {
+	Param(
+		[Parameter(Position=0)]
+		[String]$CommandPath,
+		
+		[Parameter(Position=1)]
+		[HashTable]$ArgumentList,
+		
+		[Switch]$Admin,
+		
+		[Switch]$NoExit
+	)
+	#Syntax: Restart-Script $PSCommandPath $PSBoundParameters [-Admin] [-NoExit]
+	$ArgString = ""
+	ForEach ($Parameter in $ArgumentList.GetEnumerator()) {
+		$ArgString += " -$($Parameter.Key)"
+		If ($($($Parameter.Value).GetType().Name) -ne "SwitchParameter") {
+			$ArgString += " '$($Parameter.Value)'"
+		}
+	}
+	$ArgString = "-ExecutionPolicy Bypass -Command ""&'$CommandPath'$ArgString"""
+	If ($NoExit) {
+		$ArgString = "-NoExit $ArgString"
+	}
+	If ($Admin) {
+		Start-Process Powershell -Verb RunAs -ArgumentList $ArgString
+	} Else {
+		Start-Process Powershell -ArgumentList $ArgString
+	}
+}
