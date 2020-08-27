@@ -363,7 +363,7 @@ Function Start-VPNProcess {
 	#If the write flag is set
 	If ($WriteOut) {
 		#Write that we're waiting for a connection
-		Write-Output "Waiting for connection via VPN..."
+		Write-Host "Waiting for connection via VPN..."
 	}
 
 	#Use the wait-connect function to wait for a connection to the VPN resource
@@ -371,8 +371,8 @@ Function Start-VPNProcess {
 		#If the write flag is set
 		If ($WriteOut) {
 			#Write that the connection is established and the process is being started
-			Write-Output "Connection established."
-			Write-Output "Starting $ProcessName executable..."
+			Write-Host "Connection established."
+			Write-Host "Starting $ProcessName executable..."
 		}
 		#See if the process is already running
 		$ProcVar = Get-Process -ErrorAction SilentlyContinue -Name $([IO.Path]::GetFilenameWithoutExtension($TargetProcess))
@@ -380,7 +380,7 @@ Function Start-VPNProcess {
 		If ($ProcVar -and $Exclusive) {
 			#If the write flag is set, alert the user
 			If ($WriteOut) {
-				Write-Output "$ProcessName process is already running!"
+				Write-Host "$ProcessName process is already running!"
 			}
 		} Else {
 			#Otherwise, start the appropriate process in the appropriate directory with the appropriate flag.  Store the process in $ProcVar
@@ -388,7 +388,7 @@ Function Start-VPNProcess {
 			#If the write flag is set
 			If ($WriteOut) {
 				#Write that the process has been started
-				Write-Output "$ProcessName executable started."
+				Write-Host "$ProcessName executable started."
 			}
 		}
 		#Return a true value
@@ -398,7 +398,7 @@ Function Start-VPNProcess {
 		#If the write flag is set
 		If ($WriteOut) {
 			#Write that the connection failed
-			Write-Output "Unable to connect via VPN.  Aborting starting $ProcessName executable."
+			Write-Host "Unable to connect via VPN.  Aborting starting $ProcessName executable."
 		}
 		#Return false
 		Return $False
@@ -890,7 +890,7 @@ Function Wait-ProcessRam {
 		If (!$Process -and $WaitStart) {
 			#If writing output, alert the user
 			If ($WriteOut) {
-				Write-Output "$WriteName process is not running.  Waiting for process to start..."
+				Write-Host "$WriteName process is not running.  Waiting for process to start..."
 			}
 			#Start a timer
 			$Timer = [Diagnostics.Stopwatch]::StartNew()
@@ -899,7 +899,7 @@ Function Wait-ProcessRam {
 				#If the timeout has elapsed
 				If ($Timer.Elapsed -ge $WaitTimeout) {
 					#Alert the user and break the loop
-					Write-Output "Timeout has expired!"
+					Write-Host "Timeout has expired!"
 					Break
 				}
 				#Sleep for the wait interval
@@ -916,7 +916,7 @@ Function Wait-ProcessRam {
 		}
 		#If writing output, alert the user that the process is running
 		If ($WriteOut) {
-			Write-Output "$writename process is running."
+			Write-Host "$writename process is running."
 		}
 	#Otherwise, if we're in one of the "Proc" sets
 	} Else {
@@ -928,7 +928,7 @@ Function Wait-ProcessRam {
 
 	#If writing output, alert the user that we're waiting for the process
 	If ($WriteOut) {
-		Write-Output "Waiting for $WriteName process.  RAM Handles count:"
+		Write-Host "Waiting for $WriteName process.  RAM Handles count:"
 	}
 
 	#If the loop is already going to terminate, and we've got a NoWait flag
@@ -955,8 +955,8 @@ Function Wait-ProcessRam {
 				#If writing output, alert the user that the process is stuck and it's being terminated
 				If ($WriteOut) {
 					Write-Update "$WriteName process appears to be stuck at $($Process.HandleCount) RAM handles!"
-					Write-Output ""
-					Write-Output "Terminating $WriteName process..."
+					Write-Host ""
+					Write-Host "Terminating $WriteName process..."
 				}
 				#Kill the process
 				$Process.Kill()
@@ -968,7 +968,7 @@ Function Wait-ProcessRam {
 				}
 				#If writing output, alert the user that we're waiting for the process
 				If ($WriteOut) {
-					Write-Output "Waiting for $WriteName process.  RAM handles count:"
+					Write-Host "Waiting for $WriteName process.  RAM handles count:"
 				}
 			}
 		#If the RAM handle count is different than last check
@@ -988,8 +988,8 @@ Function Wait-ProcessRam {
 		If ($Process.HasExited) {
 			#If writing output, alert the user
 			If ($WriteOut) {
-				Write-Output ""
-				Write-Output "$WriteName process has exited."
+				Write-Host ""
+				Write-Host "$WriteName process has exited."
 			}
 			#Return false
 			Return $False
@@ -999,8 +999,8 @@ Function Wait-ProcessRam {
 
 	#If writing output, alert the user that the desired RAM handle count has been reached
 	If ($WriteOut) {
-		Write-Output ""
-		Write-Output "$WriteName process has reached $HandleStop RAM handles."
+		Write-Host ""
+		Write-Host "$WriteName process has reached $HandleStop RAM handles."
 	}
 
 	#Return true
@@ -1073,7 +1073,7 @@ Function Wait-ProcessIdle {
 		If (!$Process -and $WaitStart) {
 			#If writing output, alert the user
 			If ($WriteOut) {
-				Write-Output "$WriteName process is not running.  Waiting for process to start..."
+				Write-Host "$WriteName process is not running.  Waiting for process to start..."
 			}
 			#Start a timer
 			$Timer = [Diagnostics.Stopwatch]::StartNew()
@@ -1082,7 +1082,7 @@ Function Wait-ProcessIdle {
 				#If the timeout has elapsed
 				If ($Timer.Elapsed -ge $WaitTimeout) {
 					#Alert the user and break the loop
-					Write-Output "Timeout has expired!"
+					Write-Host "Timeout has expired!"
 					Break
 				}
 				#Sleep for the wait interval
@@ -1099,7 +1099,7 @@ Function Wait-ProcessIdle {
 		}
 		#If writing output, alert the user that the process is running
 		If ($WriteOut) {
-			Write-Output "$writename process is running."
+			Write-Host "$writename process is running."
 		}
 	#Otherwise, if we're in one of the "Proc" sets
 	} Else {
@@ -1111,7 +1111,7 @@ Function Wait-ProcessIdle {
 
 	#If writing output, alert the user that we're waiting for the process
 	If ($WriteOut) {
-		Write-Output "Waiting for $WriteName process to idle..."
+		Write-Host "Waiting for $WriteName process to idle..."
 	}
 
 	#Wait for the process to start getting time on the CPU
@@ -1124,7 +1124,7 @@ Function Wait-ProcessIdle {
 		If ($Process.HasExited) {
 			#If writing output, alert the user
 			If ($WriteOut) {
-				Write-Output "$WriteName process has exited."
+				Write-Host "$WriteName process has exited."
 			}
 			#Return false
 			Return $False
@@ -1152,7 +1152,7 @@ Function Wait-ProcessIdle {
 		If ($Process.HasExited) {
 			#If writing output, alert the user
 			If ($WriteOut) {
-				Write-Output "$WriteName process has exited."
+				Write-Host "$WriteName process has exited."
 			}
 			#Return false
 			Return $False
@@ -1161,7 +1161,7 @@ Function Wait-ProcessIdle {
 
 	#If writing output, alert the user that the process has idled for the requisite time
 	If ($WriteOut) {
-		Write-Output "$WriteName process has idled."
+		Write-Host "$WriteName process has idled."
 	}
 	#Return true
 	Return $True
@@ -1233,7 +1233,7 @@ Function Wait-ProcessMainWindow {
 		If (!$Process -and $WaitStart) {
 			#If writing output, alert the user
 			If ($WriteOut) {
-				Write-Output "$WriteName process is not running.  Waiting for process to start..."
+				Write-Host "$WriteName process is not running.  Waiting for process to start..."
 			}
 			#Start a timer
 			$Timer = [Diagnostics.Stopwatch]::StartNew()
@@ -1242,7 +1242,7 @@ Function Wait-ProcessMainWindow {
 				#If the timeout has elapsed
 				If ($Timer.Elapsed -ge $WaitTimeout) {
 					#Alert the user and break the loop
-					Write-Output "Timeout has expired!"
+					Write-Host "Timeout has expired!"
 					Break
 				}
 				#Sleep for the wait interval
@@ -1259,7 +1259,7 @@ Function Wait-ProcessMainWindow {
 		}
 		#If writing output, alert the user that the process is running
 		If ($WriteOut) {
-			Write-Output "$writename process is running."
+			Write-Host "$writename process is running."
 		}
 	#Otherwise, if we're in one of the "Proc" sets
 	} Else {
@@ -1271,7 +1271,7 @@ Function Wait-ProcessMainWindow {
 
 	#If writing output, alert the user that we're waiting for the main window handle
 	If ($WriteOut) {
-		Write-Output "Waiting for $WriteName process main window handle to change..."
+		Write-Host "Waiting for $WriteName process main window handle to change..."
 	}
 
 	#Loop while the main window handle has not changed
@@ -1284,7 +1284,7 @@ Function Wait-ProcessMainWindow {
 		If ($Process.HasExited) {
 			#If writing output, alert the user
 			If ($WriteOut) {
-				Write-Output "$WriteName process has exited."
+				Write-Host "$WriteName process has exited."
 			}
 			#Return false
 			Return $False
@@ -1293,7 +1293,7 @@ Function Wait-ProcessMainWindow {
 
 	#If writing output, alert the user to the updated main window handle
 	If ($WriteOut) {
-		Write-Output "$WriteName process main window handle is now $($Process.MainWindowHandle)."
+		Write-Host "$WriteName process main window handle is now $($Process.MainWindowHandle)."
 	}
 	#Return true
 	Return $True
@@ -1349,14 +1349,14 @@ Function Wait-ProcessClose {
 	#If the user did not specify a process or if it exited, return true
 	If (!$Process -or $Process.HasExited) {
 		If ($WriteOut) {
-			Write-Output "$WriteName process has exited."
+			Write-Host "$WriteName process has exited."
 			Return $True
 		}
 	}
 
 	#If writing output, alert the user that we're waiting for the process
 	If ($WriteOut) {
-		Write-Output "Waiting for $WriteName process to exit..."
+		Write-Host "Waiting for $WriteName process to exit..."
 	}
 
 	#Start a timer
@@ -1371,8 +1371,8 @@ Function Wait-ProcessClose {
 		If ($Timer.Elapsed -ge $Timeout) {
 			#If writing output, alert the user
 			If ($WriteOut) {
-				Write-Output "Timeout exceeded."
-				Write-Output "$WriteName process has not exited."
+				Write-Host "Timeout exceeded."
+				Write-Host "$WriteName process has not exited."
 			}
 			#Return false
 			Return $False
@@ -1381,7 +1381,7 @@ Function Wait-ProcessClose {
 
 	#If writing output, alert the user that the process has idled for the requisite time
 	If ($WriteOut) {
-		Write-Output "$WriteName process has exited."
+		Write-Host "$WriteName process has exited."
 	}
 	#Return true
 	Return $True
@@ -1468,7 +1468,7 @@ Function Restart-Process {
 
 	If ($PSCmdlet.ParameterSetName -like "*Name") {
 		If ($WriteOut) {
-			Write-Output "Acquiring handle for $WriteName process..."
+			Write-Host "Acquiring handle for $WriteName process..."
 		}
 		$Process = Get-Process -ErrorAction SilentlyContinue -Name $ProcessName
 	}
@@ -1481,39 +1481,39 @@ Function Restart-Process {
 
 	If ($UseExternal) {
 		If ($WriteOut) {
-			Write-Output "Stopping $WriteName process using external command: ""$External""..."
+			Write-Host "Stopping $WriteName process using external command: ""$External""..."
 		}
 		cmd /c "$External"
 	} ElseIf ($UseFlags) {
 		If ($WriteOut) {
-			Write-Output "Stopping $WriteName process using flags: ""$Flags""..."
+			Write-Host "Stopping $WriteName process using flags: ""$Flags""..."
 		}
 		Start-Process $Path -ArgumentList $Flags
 	} Else {
 		If ($WriteOut) {
-			Write-Output "Stopping $WriteName process by closing main window..."
+			Write-Host "Stopping $WriteName process by closing main window..."
 		}
 		$Process.CloseMainWindow()
 	}
 
 	If ($ForceClose -and !$(Wait-ProcessClose $Process -WriteOut:$WriteOut -WriteName $WriteName -CheckInterval $CheckInterval -Timeout $Timeout)) {
 		If ($WriteOut) {
-			Write-Output "$WriteName process is not stopping.  Force closing..."
+			Write-Host "$WriteName process is not stopping.  Force closing..."
 		}
 		$Process.Kill()
 		$ForceClose = $False
 	}
 	If (!$ForceClose -and !$(Wait-ProcessClose $Process -WriteOut:$WriteOut -WriteName $WriteName -CheckInterval $CheckInterval -Timeout $Timeout)) {
 		If ($WriteOut) {
-			Write-Output "Unable to stop $WriteName process!"
+			Write-Host "Unable to stop $WriteName process!"
 		}
 		Return $False
 	}
 
 	If ($WriteOut -and $StartArgs) {
-		Write-Output "Starting $WriteName process with arguments ""$StartArgs""..."
+		Write-Host "Starting $WriteName process with arguments ""$StartArgs""..."
 	} ElseIf ($WriteOut) {
-		Write-Output "Starting $WriteName process..."
+		Write-Host "Starting $WriteName process..."
 	}
 
 	If ($StartArgs) {
@@ -1523,7 +1523,7 @@ Function Restart-Process {
 	}
 
 	If ($WriteOut) {
-		Write-Output "$WriteName process started."
+		Write-Host "$WriteName process started."
 	}
 	Return $True
 }
@@ -1725,25 +1725,25 @@ Function Get-MemberRecurse {
 					$GroupStr = Format-String -Trim -Indent 4 -WordWrap -Width $Width $($Groups[$Type] -join ", ")
 					$DispStr = Format-String -Trim -Indent 4 -Truncate -Width $Width @DispArray
 				}
-				Write-Output "`r`n"
-				Write-Output "Type $TypeName contains the following objects:"
-				Write-Output $GroupStr
-				Write-Output "Members of ${TypeName}:"
-				Write-Output $DispStr
+				Write-Host "`r`n"
+				Write-Host "Type $TypeName contains the following objects:"
+				Write-Host $GroupStr
+				Write-Host "Members of ${TypeName}:"
+				Write-Host $DispStr
 			}
 
 		}
 	} Else {
 		ForEach ($Entry in $Output) {
 			$Indent = $Entry[0]
-			Write-Output "`r`n"
-			Write-Output $(Format-String $Entry[1] -Indent $Indent)
+			Write-Host "`r`n"
+			Write-Host $(Format-String $Entry[1] -Indent $Indent)
 			$Disparray = $Entry[2]
 			$Indent += 2
 			if ($NoTruncate) {
-				Write-Output $(Format-String -Trim -Indent $Indent @DispArray)
+				Write-Host $(Format-String -Trim -Indent $Indent @DispArray)
 			} Else {
-				Write-Output $(Format-String -Trim -Indent $Indent -Truncate -Width $Width @DispArray)
+				Write-Host $(Format-String -Trim -Indent $Indent -Truncate -Width $Width @DispArray)
 			}
 		}
 	}
