@@ -7,14 +7,14 @@ def group_count(iterable):
     from itertools import groupby
     yield from ((grp, len(list(items))) for grp, items in groupby(iterable))
 
-def grouped(iterable, num=2, *, fill_all=False, fill=False, fillvalue=None):
+def grouped(iterable, num=2, *, ret_all=False, fill=False, fillvalue=None):
     """Group an iterable into pairs (or groups of n length).
 
     For example, list(grouped(range(20),3)) == [(0, 1, 2), (3, 4, 5), (6, 7, 8),
     (9, 10, 11), (12, 13, 14), (15, 16, 17)]
 
-    Pass the all flag to include the partial un-full group at the end, if one
-    exists.
+    Pass the ret_all flag to include the partial un-full group at the end, if
+    one exists.
     Pass the fill flag with an optional fill value to fill the partial group at
     the end, if there is one, with the provided fill value (or none if no fill
     value was provided).
@@ -27,7 +27,7 @@ def grouped(iterable, num=2, *, fill_all=False, fill=False, fillvalue=None):
         #missing values with the fill value
         return zip_longest(*[iterator]*num, fillvalue=fillvalue)
     #
-    if fill_all:  #If returning all elements
+    if ret_all:  #If returning all elements
         def gen():  #Create a generator function, for similar functionality
             from itertools import islice  #For slicing iterator objects
             #Take the first n items and convert to a tuple
@@ -145,7 +145,11 @@ def base_converter(num_expr, base, num_decimals=12): #pylint: disable=too-many-b
         #If we didn't break due to repeating digits, round up and indicate
         #that rounding occurred, if appropriate.
         if num // power > Fraction(base, 2):
+            #Start at the last digit of the output
             i = -1
+            #While rouding up the last digit will exceed the base, round it up
+            #(use modulo to wrap around the base) and move back a digit.  Skip
+            #the decimal place.
             while numbers[outp[i]]+1 >= base:
                 outp[i] = digits[(numbers[outp[i]]+1) % base]
                 i -= 1
@@ -154,6 +158,8 @@ def base_converter(num_expr, base, num_decimals=12): #pylint: disable=too-many-b
                 if i <= -len(outp):
                     outp[0] = str(base)
                     break
+            #If we broke out early, we hit the end of the string and addressed
+            #it appropriately.  If not, we still have one more digit to round up
             else:
                 outp[i] = digits[numbers[outp[i]]+1]
         if num:
