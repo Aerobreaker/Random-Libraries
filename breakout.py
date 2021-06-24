@@ -1,3 +1,6 @@
+exec("['one-line command goes here' for 'built-ins to include (like __import__) go here' in [[[i for i in ().__class__.__bases__[0].__subclasses__() if i.__name__ == 'BuiltinImporter'][0].load_module('builtins').__dict__[i] for i in ('builtins','also','go','here')]]]", {'__builtins__':{}})
+exec("[print('{}. {}'.format(next(__import__('itertools').count(1)), 'Test')) for __import__, next, print in [[[i for i in ().__class__.__bases__[0].__subclasses__() if i.__name__ == 'BuiltinImporter'][0].load_module('builtins').__dict__[j] for j in ('__import__', 'next', 'print')]]]", {'__builtins__':{}})
+
 print('\n'.join('{:0>{}} - {:<{}} ({})'.format(i, len(str(len(object.__subclasses__()))), j.__name__, len(max((k.__name__ for k in object.__subclasses__()), key=len)), j) for i, j in enumerate(object.__subclasses__())))
 
 
