@@ -49,7 +49,7 @@ def grouped(iterable, num=2, *, ret_all=False, fill=False, fillvalue=None):
 
 
 # Iterate through each element of an iterator in groups
-def groupwise(iterable, num=2):
+def groupwise(iterable, num=2, circular=False):
     """Iterate through in iterator in pairs (or groups of n length).
 
     For example, list(groupwise(range(10),3)) == [(0, 1, 2), (1, 2, 3),
@@ -57,17 +57,46 @@ def groupwise(iterable, num=2):
     """
     # Import tee to copy iterators, count for a quick counter, and islice for
     # consuming items from an iterator
-    from itertools import count, islice, tee
+    from itertools import chain, count, islice, tee
     # Turn the iterable into an iterator and create n copies of the iterator
-    iters = tee(iter(iterable), num)
+    iters = list(tee(iter(iterable), num))
     # Iterate through the copies of the iterator
     for i, iterator in zip(count(), iters):
         # Advance to an empty slice at the ith element, consuming the first i
         # elements
-        next(islice(iterator, i, i), None)
+        if circular:
+            tmp = tuple(islice(iterator, i))
+            iters[i] = chain(iterator, tmp)
+        else:
+            next(islice(iterator, i, i), None)
     # 
     # Zip the iterators together and return the zipped iterators
     return zip(*iters)
+# 
+
+
+def month_runs_list(n):
+    '''Return a list of the longest runs n months long'''
+    if n < 1 or n > 12:
+        return
+    from operator import itemgetter
+    mons = (('January', 31), ('February', 28.5), ('March', 31), ('April', 30),
+            ('May', 31), ('June', 30), ('July', 31), ('August', 31),
+            ('September', 30), ('October', 31), ('November', 30),
+            ('Decemer', 31))
+    runs = tuple((i, sum(j[1] for j in i)) for i in groupwise(mons, n, True))
+    maxlen = max(runs, key=itemgetter(1))[1]
+    return [i for i in runs if i[1] == maxlen]
+# 
+
+
+def month_runs(n):
+    '''Print all of the runs n months long'''
+    if n < 1 or n > 12:
+        return
+    print('Longest runs of {} months:'.format(n))
+    for i in month_runs_list(n):
+        print('  {} through {} : {} days'.format(i[0][0][0], i[0][-1][0], i[1]))
 # 
 
 
