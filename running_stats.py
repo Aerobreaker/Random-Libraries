@@ -46,7 +46,7 @@ def main():
         elif len(top) > len(bot):
             median = top[0]
         else:
-            median = (bot[0] + top[0]) / 2
+            median = (bot[0]+top[0]) / 2 if (bot[0]&1 + top[0]&1) & 1 else round((bot[0]+top[0]) / 2)
         if len(cnts) == 0:
             mode = None
         else:
@@ -58,9 +58,9 @@ def main():
         med_s = str(median)
         mod_s = str(mode)
         maxlen = max(len(min_s), len(max_s), len(sum_s), len(avg_s), len(med_s))
-        print('Current minimum : {:{ln}}     Current maximum : {:{ln}}'.format(min_s, max_s, ln=maxlen))
-        print('Current total   : {:{ln}}     Current average : {:{ln}}'.format(sum_s, avg_s, ln=maxlen))
-        print('Current median  : {:{ln}}     Current mode    : {:{ln}}'.format(med_s, mod_s, ln=maxlen))
+        print('Current minimum : {:{ln}}   Current maximum : {:{ln}}'.format(min_s, max_s, ln=maxlen))
+        print('Current total   : {:{ln}}   Current average : {:{ln}}'.format(sum_s, avg_s, ln=maxlen))
+        print('Current median  : {:{ln}}   Current mode    : {:{ln}}'.format(med_s, mod_s, ln=maxlen))
         inp_s = input('Next number to add : ').strip()
         print('')
         try:
@@ -117,7 +117,7 @@ def main():
         elif len(top) > len(bot):
             median = top[0]
         else:
-            median = (bot[0] + top[0]) / 2
+            median = (bot[0]+top[0]) / 2 if (bot[0]&1 + top[0]&1) & 1 else round((bot[0]+top[0]) / 2)
         if len(cnts) == 0:
             mode = None
         else:
@@ -130,9 +130,9 @@ def main():
         mod_s = str(mode)
         maxlen = max(len(min_s), len(max_s), len(sum_s), len(avg_s), len(med_s))
         print('Final numbers: {}'.format(inps))
-        print('Minimum : {:{ln}}     Maximum : {:{ln}}'.format(min_s, max_s, ln=maxlen))
-        print('Total   : {:{ln}}     Average : {:{ln}}'.format(sum_s, avg_s, ln=maxlen))
-        print('Median  : {:{ln}}     Mode    : {:{ln}}'.format(med_s, mod_s, ln=maxlen))
+        print('Minimum : {:{ln}}   Maximum : {:{ln}}'.format(min_s, max_s, ln=maxlen))
+        print('Total   : {:{ln}}   Average : {:{ln}}'.format(sum_s, avg_s, ln=maxlen))
+        print('Median  : {:{ln}}   Mode    : {:{ln}}'.format(med_s, mod_s, ln=maxlen))
 
 
 if __name__ == '__main__':
