@@ -6,7 +6,7 @@ print('\n'.join('{:0>{}} - {:<{}} ({})'.format(i, len(str(len(object.__subclasse
 
 
 
->>> exec('__import__("os").system("bad.bat")')
+'''>>> exec('__import__("os").system("bad.bat")')
 
 Python>echo/This is a batch file that does bad stuff
 This is a batch file that does bad stuff
@@ -22,7 +22,7 @@ NameError: name '__import__' is not defined
 >>> exec('[i for i in ().__class__.__bases__[0].__subclasses__() if i.__name__ == "BuiltinImporter"][0].load_module("os").system("bad.bat")', {'__builtins__':{}})
 
 Python>echo/This is a batch file that does bad stuff
-This is a batch file that does bad stuff
+This is a batch file that does bad stuff'''
 
 
 
