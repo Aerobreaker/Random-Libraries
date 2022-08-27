@@ -1766,23 +1766,9 @@ Function Restart-Script {
 	# Syntax: Restart-Script $PSCommandPath $PSBoundParameters [-Admin] [-NoExit] [-Hidden]
 	$SapsArgs = @{
 		"FilePath" = $(Get-Process -Id $PID).Path
-		"ArgumentList" = ""
-	}
-	ForEach ($Parameter in $ArgumentList.GetEnumerator()) {
-		$SapsArgs["ArgumentList"] += " -$($Parameter.Key)"
-		If ($($($Parameter.Value).GetType().Name) -ne "SwitchParameter") {
-			$SapsArgs["ArgumentList"] += " '$($Parameter.Value)'"
-		}
-	}
-	$SapsArgs["ArgumentList"] = "-ExecutionPolicy Bypass -Command ""&'$CommandPath'$($SapsArgs['ArgumentList'])"""
-	If ($NoExit) {
-		$SapsArgs["ArgumentList"] = "-NoExit $($SapsArgs['ArgumentList'])"
-	}
-	If ($Admin) {
-		$SapsArgs['Verb'] = 'RunAs'
-	}
-	If ($Hidden) {
-		$SapsArgs['WindowStyle'] = 'Hidden'
+		"ArgumentList" = "-ExecutionPolicy Bypass $($NoExit ? '-NoExit ' : '')-Command ""&'$CommandPath'$($ArgumentList.GetEnumerator().ForEach({"" -$($_.Key):$($_.Value -Is [Bool] -Or $_.Value -is [Switch] ? '$' : '')$($_.Value)""}) -join '')"""
+		"Verb" = $Admin ? "RunAs" : "Open"
+		"WindowStyle" = $Hidden ? "Hidden" : "Normal"
 	}
 	Start-Process @SapsArgs
 }
@@ -1800,7 +1786,7 @@ Function Start-AsAdmin {
 		
 		[String] $PipeName = ""
 	)
-	# Example usage: Start-AsAdmin $(Get-Command -Name Main) $PSBoundParameters -TaskPath "\" -TaskName "BackgrounTask"
+	# Example usage: Start-AsAdmin $(Get-Command -Name Main) $PSBoundParameters -TaskPath "\" -TaskName "BackgroundTask"
 	Enum PipeMode {
 		Read
 		Write
@@ -1811,6 +1797,14 @@ Function Start-AsAdmin {
 	}
 	# If the function being run writes character 0 twice on a line, it'll stop passing data across the pipe early
 	$CtlEnd = "`0`0"
+	
+	$SchTaskParams = @{
+		TaskName = [String]$TaskName
+		TaskPath = [String]$TaskPath  # Coalesce to null string, let EA SilentlyContinue handle this case
+		ErrorAction = "SilentlyContinue"
+	}
+	# Try to get a reference to the specified scheduled task
+	$SchTask = Get-ScheduledTask @SchTaskParams
 	
 	# Get a "client" pipe in the output direction (why client serves data and server receives it, I have no idea)
 	# It would make sense to switch them, but pipe server streams don't have a connect method with a timeout
@@ -1824,6 +1818,29 @@ Function Start-AsAdmin {
 		$Mode = [PipeMode]::Read
 	}
 	If ($Mode -eq [PipeMode]::Write) {
+		# If there's no scheduled task but there is a task name, create the scheduled task
+		If (!$SchTask -and $TaskName) {
+			$SchTaskSettings = New-ScheduledTaskSettingsSet -Priority 5 -AllowStartIfOnBatteries -Hidden
+			$SchTaskSettings.UseUnifiedSchedulingEngine = $False
+			$SchTaskPrincipal = New-ScheduledTaskPrincipal -Id Author -RunLevel Highest -UserId $([System.Environment]::UserName)
+			$ArgStr = ""
+			If ($Arguments) {
+				$ArgStrB = [System.Text.StringBuilder]::New()
+				$Arguments.GetEnumerator().ForEach({[void]$ArgStrB.Append(" -$($_.Key):$($_.Value -Is [Bool] -Or $_.Value -is [Switch] ? '$' : '')$($_.Value)")})
+				$ArgStr = $ArgStrB.ToString()
+			}
+			$SchTaskAction =  New-ScheduledTaskAction -Execute $(Get-Process -Id $PID).Path -WorkingDirectory $PWD -Argument "-ExecutionPolicy Bypass -WindowStyle Hidden -Command ""&'$($MyInvocation.ScriptName)'$ArgStr"""
+			$SchTask = New-ScheduledTask -Action $SchTaskAction -Principal $SchTaskPrincipal -Settings $SchTaskSettings
+			$SchTaskParams = @{
+				InputObject = $SchTask
+				TaskName = $TaskName
+			}
+			If ($TaskPath) {
+				$SchTaskParams['TaskPath'] = $TaskPath
+			}
+			Register-ScheduledTask @SchTaskParams
+		}
+
 		$StreamWriter = New-Object System.IO.StreamWriter($Pipe)
 		# Autoflush to preclude the need to flush after every write
 		$StreamWriter.AutoFlush = $True
@@ -1843,8 +1860,7 @@ Function Start-AsAdmin {
 		$StreamWriter.Dispose()
 		$Pipe.Dispose()
 	} Else {
-		# Try to get a reference to the specified scheduled task
-		$SchTask = Get-ScheduledTask -TaskPath $TaskPath -TaskName $TaskName -ErrorAction SilentlyContinue
+
 		# If there's no scheduled task, restart the current script as admin in the background
 		If ($SchTask) {
 			Start-ScheduledTask -InputObject $SchTask
