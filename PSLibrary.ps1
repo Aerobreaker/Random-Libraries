@@ -1451,7 +1451,9 @@ Function Restart-Process {
 
 		[Parameter(Position=5)]
 		[Alias("Time")]
-		[Timespan]$Timeout = [Timespan]::FromSeconds(30)
+		[Timespan]$Timeout = [Timespan]::FromSeconds(30),
+		
+		[String] $Path = ""
 	)
 
 	If ($PSCmdlet.ParameterSetName -like "*Name") {
@@ -1465,7 +1467,9 @@ Function Restart-Process {
 		Throw "Invalid process specified!"
 	}
 
-	$Path = $Process.Path
+	If (!$Path) {
+		$Path = $Process.Path
+	}
 
 	If ($UseExternal) {
 		If ($WriteOut) {
@@ -1766,9 +1770,9 @@ Function Restart-Script {
 	# Syntax: Restart-Script $PSCommandPath $PSBoundParameters [-Admin] [-NoExit] [-Hidden]
 	$SapsArgs = @{
 		"FilePath" = $(Get-Process -Id $PID).Path
-		"ArgumentList" = "-ExecutionPolicy Bypass $($NoExit ? '-NoExit ' : '')-Command ""&'$CommandPath'$($ArgumentList.GetEnumerator().ForEach({"" -$($_.Key):$($_.Value -Is [Bool] -Or $_.Value -is [Switch] ? '$' : '')$($_.Value)""}) -join '')"""
-		"Verb" = $Admin ? "RunAs" : "Open"
-		"WindowStyle" = $Hidden ? "Hidden" : "Normal"
+		"ArgumentList" = "-ExecutionPolicy Bypass $(If ($NoExit) {'-NoExit '})-Command ""&'$CommandPath'$($ArgumentList.GetEnumerator().ForEach({"" -$($_.Key):$(If ($_.Value -Is [Bool] -Or $_.Value -is [Switch]) {'$'})$($_.Value)""}) -join '')"""
+		"Verb" = If ($Admin) {"RunAs"} Else {"Open"}
+		"WindowStyle" = If ($Hidden) {"Hidden"} Else {"Normal"}
 	}
 	Start-Process @SapsArgs
 }
@@ -1826,7 +1830,7 @@ Function Start-AsAdmin {
 			$ArgStr = ""
 			If ($Arguments) {
 				$ArgStrB = [System.Text.StringBuilder]::New()
-				$Arguments.GetEnumerator().ForEach({[void]$ArgStrB.Append(" -$($_.Key):$($_.Value -Is [Bool] -Or $_.Value -is [Switch] ? '$' : '')$($_.Value)")})
+				$Arguments.GetEnumerator().ForEach({[void]$ArgStrB.Append(" -$($_.Key):$(If ($_.Value -Is [Bool] -Or $_.Value -is [Switch]) {'$'})$($_.Value)")})
 				$ArgStr = $ArgStrB.ToString()
 			}
 			$SchTaskAction =  New-ScheduledTaskAction -Execute $(Get-Process -Id $PID).Path -WorkingDirectory $PWD -Argument "-ExecutionPolicy Bypass -WindowStyle Hidden -Command ""&'$($MyInvocation.ScriptName)'$ArgStr"""
@@ -1896,3 +1900,127 @@ Function Start-AsAdmin {
 		$Pipe.Dispose()
 	}
 }
+
+# Window and mouse control stuff
+Add-Type -ReferencedAssemblies System.Windows.Forms,System.Drawing,System.Drawing.Primitives @"
+	using System;
+	using System.Drawing;
+	using System.Runtime.InteropServices;
+	using System.Windows.Forms;
+	public class Mouse {
+		//https://msdn.microsoft.com/en-us/library/windows/desktop/ms646270(v=vs.85).aspx
+		[StructLayout(LayoutKind.Sequential)]
+		struct INPUT { 
+			public int        type; // 0 = INPUT_MOUSE,
+									// 1 = INPUT_KEYBOARD
+									// 2 = INPUT_HARDWARE
+			public MOUSEINPUT mi;
+		}
+
+		//https://msdn.microsoft.com/en-us/library/windows/desktop/ms646273(v=vs.85).aspx
+		[StructLayout(LayoutKind.Sequential)]
+		struct MOUSEINPUT {
+			public int    dx ;
+			public int    dy ;
+			public int    mouseData ;
+			public int    dwFlags;
+			public int    time;
+			public IntPtr dwExtraInfo;
+		}
+
+		//This covers most use cases although complex mice may have additional buttons
+		//There are additional constants you can use for those cases, see the msdn page
+		const int MOUSEEVENTF_MOVED      = 0x0001 ;
+		const int MOUSEEVENTF_LEFTDOWN   = 0x0002 ;
+		const int MOUSEEVENTF_LEFTUP     = 0x0004 ;
+		const int MOUSEEVENTF_RIGHTDOWN  = 0x0008 ;
+		const int MOUSEEVENTF_RIGHTUP    = 0x0010 ;
+		const int MOUSEEVENTF_MIDDLEDOWN = 0x0020 ;
+		const int MOUSEEVENTF_MIDDLEUP   = 0x0040 ;
+		const int MOUSEEVENTF_WHEEL      = 0x0080 ;
+		const int MOUSEEVENTF_XDOWN      = 0x0100 ;
+		const int MOUSEEVENTF_XUP        = 0x0200 ;
+		const int MOUSEEVENTF_ABSOLUTE   = 0x8000 ;
+
+		const int screen_length = 0x10000 ;
+
+		//https://msdn.microsoft.com/en-us/library/windows/desktop/ms646310(v=vs.85).aspx
+		[System.Runtime.InteropServices.DllImport("user32.dll")]
+		extern static uint SendInput(uint nInputs, INPUT[] pInputs, int cbSize);
+		
+		public static void MoveMouseToPoint(int x, int y) {
+			INPUT[] input = new INPUT[1];
+			input[0].mi.dx = x*(65535/System.Windows.Forms.Screen.PrimaryScreen.Bounds.Width);
+			input[0].mi.dy = y*(65535/System.Windows.Forms.Screen.PrimaryScreen.Bounds.Height);
+			input[0].mi.dwFlags = MOUSEEVENTF_MOVED | MOUSEEVENTF_ABSOLUTE;
+			SendInput(1, input, Marshal.SizeOf(input[0]));
+		}
+		
+		public static void LeftClick() {
+			INPUT[] input = new INPUT[2];
+			input[0].mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
+			input[1].mi.dwFlags = MOUSEEVENTF_LEFTUP;
+			SendInput(2, input, Marshal.SizeOf(input[0]));
+		}
+
+		public static void LeftClickAtPoint(int x, int y) {
+			//Move the mouse
+			INPUT[] input = new INPUT[3];
+			input[0].mi.dx = x*(65535/System.Windows.Forms.Screen.PrimaryScreen.Bounds.Width);
+			input[0].mi.dy = y*(65535/System.Windows.Forms.Screen.PrimaryScreen.Bounds.Height);
+			input[0].mi.dwFlags = MOUSEEVENTF_MOVED | MOUSEEVENTF_ABSOLUTE;
+			//Left mouse button down
+			input[1].mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
+			//Left mouse button up
+			input[2].mi.dwFlags = MOUSEEVENTF_LEFTUP;
+			SendInput(3, input, Marshal.SizeOf(input[0]));
+		}
+	}
+	
+	public struct RECT {
+		public int Left;        // x position of upper-left corner
+		public int Top;         // y position of upper-left corner
+		public int Right;       // x position of lower-right corner
+		public int Bottom;      // y position of lower-right corner
+	}
+
+    public class Window {
+		const int SW_HIDE				= 0;
+		const int SW_SHOWNORMAL			= 1;
+		const int SW_NORMAL				= 1;
+		const int SW_SHOWMINIMIZED		= 2;
+		const int SW_SHOWMAXIMIZED		= 3;
+		const int SW_MAXIMIZE			= 3;
+		const int SW_SHOWNOACTIVATE		= 4;
+		const int SW_SHOW				= 5;
+		const int SW_MINIMIZE			= 6;
+		const int SW_SHOWMINNOACTIVE	= 7;
+		const int SW_SHOWNA				= 8;
+		const int SW_RESTORE			= 9;
+		const int SW_SHOWDEFAULT		= 10;
+		const int SW_FORCEMINIMIZE		= 11;
+	
+		[DllImport("user32.dll")]
+		[return: MarshalAs(UnmanagedType.Bool)]
+		public static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
+		
+		[DllImport("user32.dll")]
+		[return: MarshalAs(UnmanagedType.Bool)]
+		public static extern bool SetForegroundWindow(IntPtr hWnd);
+
+		[DllImport("user32.dll")]
+		[return: MarshalAs(UnmanagedType.Bool)]
+		public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+		
+		public static void ActivateWindow(IntPtr hWnd) {
+			SetForegroundWindow(hWnd);
+			ShowWindow(hWnd, SW_SHOW);
+		}
+		
+		public static RECT GetWindowCoords(IntPtr hWnd) {
+			RECT outp;
+			GetWindowRect(hWnd, out outp);
+			return outp;
+		}
+    }
+"@
