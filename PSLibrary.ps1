@@ -35,10 +35,11 @@ Function Write-Indirectable {
 	[Console]::ForegroundColor = $ForegroundColor
 	[Console]::BackgroundColor = $BackgroundColor
 	If ($InputObject.GetEnumerator -and $InputObject -IsNot [String]) {
-		$OutputString = Out-String -InputObject ($InputObject.GetEnumerator() -join $Separator) -NoNewLine
+		$OutputString = Out-String -InputObject ($InputObject.GetEnumerator() -join $Separator)
 	} Else {
-		$OutputString = Out-String -InputObject $InputObject -NoNewLine
+		$OutputString = Out-String -InputObject $InputObject
 	}
+	$OutputString = $OutputString.Remove($OutputString.Length - 2)  # The NoNewLine parameter doesn't exist before PS 6.  Instead, let the new line be appended and remove it
 	If ($NoNewLine) {
 		[Console]::Write($OutputString)
 	} Else {
