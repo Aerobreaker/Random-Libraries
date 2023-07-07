@@ -1791,6 +1791,8 @@ Function Start-AsAdmin {
 		
 		[String] $PipeName = ""
 	)
+	# To start as not-admin:
+	# runas /trustlevel:0x20000 pwsh
 	# Example usage: Start-AsAdmin $(Get-Command -Name Main) $PSBoundParameters -TaskPath "\" -TaskName "BackgroundTask"
 	Enum PipeMode {
 		Read
@@ -1800,6 +1802,7 @@ Function Start-AsAdmin {
 	If ($PipeName -eq "") {
 		$PipeName = "$($MyInvocation.ScriptName)-$($Func.Name)"
 	}
+	$ControlPipeName = "$($PipeName)_Control"
 	# If the function being run writes character 0 twice on a line, it'll stop passing data across the pipe early
 	$CtlEnd = "`0`0"
 	
@@ -1854,16 +1857,23 @@ Function Start-AsAdmin {
 		# Save off the current output stream, in case it's not stdout
 		$CurrentOut = [Console]::Out
 		[Console]::SetOut($StreamWriter)
+
+		$ControlPipe = New-Object System.IO.Pipes.NamedPipeServerStream($ControlPipeName, [System.IO.Pipes.PipeDirection]::In)
+		$ControlPipe.WaitForConnection()
+		$StreamReader = New-Object System.IO.StreamReader($ControlPipe)
+		[Console]::SetIn($StreamReader)
+
 		# NOTE: If an error occurs in the function being executed or when cleaning up, this function will try to run again!
 		# Depend on the function using Console.Write (or Write-Indirectable above) for output
 		Try {
 			& $Func @Arguments
-		} Catch {}
-		[Console]::SetOut($CurrentOut)
-		$StreamWriter.WriteLine($CtlEnd)
-		# Dispose to clean up
-		$StreamWriter.Dispose()
-		$Pipe.Dispose()
+		} Finally {
+			[Console]::SetOut($CurrentOut)
+			$StreamWriter.WriteLine($CtlEnd)
+			# Dispose to clean up
+			$StreamWriter.Dispose()
+			$Pipe.Dispose()
+		}
 	} Else {
 
 		# If there's no scheduled task, restart the current script as admin in the background
@@ -1872,25 +1882,47 @@ Function Start-AsAdmin {
 		} Else {
 			Restart-Script $MyInvocation.ScriptName $Arguments -Admin -Hidden
 		}
-		
+
 		# Get a "server" pipe in the input direction and wait indefinitely for it to connect
 		$Pipe = New-Object System.IO.Pipes.NamedPipeServerStream($PipeName, [System.IO.Pipes.PipeDirection]::In)
 		$Pipe.WaitForConnection()
-		
+
 		$StreamReader = New-Object System.IO.StreamReader($Pipe)
-		
+
+		Write-Host "Debug:"
+		Write-Host "    Pipe name = $PipeName"
+		Write-Host "    Control pipe name = $ControlPipeName"
+		$ControlPipe = New-Object System.IO.Pipes.NamedPipeClientStream(".", $ControlPipeName, [System.IO.Pipes.PipeDirection]::Out)
+		$ControlPipe.Connect(2)
+		$StreamWriter = New-Object System.IO.StreamWriter($ControlPipe)
+		$StreamWriter.AutoFlush = $True
+
 		# Unfortunately, there's no way to time this out...
 		# After the first line is read, though, everything flows quite quickly
 		$Line = $StreamReader.ReadLine()
 		# Output needs to start with the control sequence
 		If ($Line -match "^$CtlEnd$") {
 			$Line = ""
-			While ($Line -notmatch "^$CtlEnd$") {
-				If ($Line) {
-					Write-Indirectable $Line
+			Try {
+				[Console]::TreatControlCAsInput = $True
+				While ($Line -notmatch "^$CtlEnd$") {
+					If ($Host.UI.RawUI.KeyAvailable -and ($Key = $Host.UI.RawUI.ReadKey("AllowCtrlC,NoEcho,IncludeKeyUp"))) {
+						If ([Int]$Key.Character -eq 3) {
+							$StreamWriter.WriteLine($Key.Character)
+							Break
+						}
+						$Host.UI.RawUI.FlushInputBuffer()
+					}
+					If ($Line) {
+						Write-Indirectable $Line
+					}
+					Start-Sleep -Milliseconds 5
+					$Line = $StreamReader.ReadLine()
 				}
-				Start-Sleep -Milliseconds 5
-				$Line = $StreamReader.ReadLine()
+			} Finally {
+				$StreamWriter.Dispose()
+				$Pipe.Dispose()
+				[Console]::TreatControlCAsInput = $False
 			}
 		} Else {
 			Write-Indirectable "Invalid data sent across pipe!"
