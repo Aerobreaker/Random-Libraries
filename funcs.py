@@ -3,6 +3,74 @@ from __future__ import generator_stop
 from functools import wraps
 
 
+def menu(collection, title, prompt, *, rows=None, cols=None, min_len=38):
+    """
+    Give the user a menu of items and ask them to pick one
+    :param collection: collection of items to present to the user
+    :param title: displays before the collection
+    :param prompt: the question to ask the user
+    :param rows: (optional) number of rows to limit to.  Defaults to shutil.get_terminal_size()[1]
+    :param cols: (optional) columns limit.  Defaults to shutil.get_terminal_size()[0]
+    :param min_len: (optional) minimum characters per element.  Defaults to 38
+    :return: int index in collection that the user selected
+    """
+    from contextlib import suppress
+    from shutil import get_terminal_size
+
+    def group(iterable, n):
+        from itertools import islice
+        iterator = iter(iterable)
+        out = tuple(islice(iterator, n))
+        while out:
+            yield out
+            out = tuple(islice(iterator, n))
+
+    def fmt(a, b, a_len, tot_len):
+        instr = f'{a:>{a_len}}. {b}'
+        out = f'{instr:<{tot_len}}'
+        if len(out) > tot_len:
+            out = f'{out[:tot_len-3]}...'
+        return out
+
+    prompt += ' (* or Q to quit, ? to repeat): '
+    term_cols, term_rows = get_terminal_size()
+    rows = rows or term_rows
+    cols = cols or term_cols
+    # Reserve space for the lead and prompt rows
+    rows -= 2
+    # Give an extra space to ensure we don't wrap unnecessarily
+    cols -= 1
+    # Each element is actually 38 - we're using 39 to account for the separator
+    max_cols = (cols - 1) // (min_len + 1)
+    disp_collection = list((str(i+1), j) for i, j in enumerate(collection))
+    nlen = len(str(len(disp_collection)))
+    if len(disp_collection) > rows * max_cols:
+        items = group(disp_collection, max_cols)
+        max_len = min_len
+    elif len(disp_collection) > rows:
+        num_cols = len(disp_collection) // rows
+        items = (disp_collection[i::rows] for i in range(rows))
+        max_len = (cols - 1) // num_cols
+        max_len -= (cols - max_len * num_cols) < num_cols
+    else:
+        items = ((i,) for i in disp_collection)
+        max_len = cols - 2
+    lines = [' '.join(fmt(n, i, nlen, max_len) for (n, i) in j) for j in items]
+    print(title)
+    print('\n'.join(f'  {i}' for i in lines))
+    while True:
+        num = input(prompt)
+        if num.lower() in ['', 'q', '*']:
+            return 0, False
+        elif num.lower() in ['?']:
+            print(title)
+            print('\n'.join(f'  {i}' for i in lines))
+        with suppress(ValueError):
+            num = int(num) - 1
+            if 0 <= num < len(disp_collection):
+                return num, True
+
+
 def group_count(iterable):
     """Return the groups and their counts from an iterable."""
     from itertools import groupby
